@@ -1,0 +1,204 @@
+            <div class="mb-3">
+                <label class="form-label">Question image</label>
+                @if (!string.IsNullOrEmpty(Model.ImagePath))
+                {
+                    <div class="mb-2">
+                        <img src="~/@Model.ImagePath" alt="Question image" class="img-thumbnail" style="max-height: 160px;" />
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="RemoveImage" value="true" id="removeImage">
+                        <label class="form-check-label" for="removeImage">Remove current image</label>
+                    </div>
+                }
+                <input type="file" name="Image" accept="image/*" class="form-control" />
+                <small class="text-muted">Max size 2 MB.</small>
+            </div>
+@model SurveyWeb.Models.Question
+@{
+    ViewData["Title"] = "Sửa câu hỏi";
+}
+
+<div class="admin-card" style="max-width: 900px; margin: 0 auto;">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">Sửa câu hỏi #@Model.QuestionId</h5>
+    </div>
+    <div class="admin-card-body">
+        <form asp-action="Edit" asp-route-id="@Model.QuestionId" method="post" id="editQuestionForm" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="SurveyId" value="@Model.SurveyId" />
+
+            <div class="mb-3">
+                <label class="form-label">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                <textarea name="QuestionText" class="form-control" rows="2" required>@Model.QuestionText</textarea>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Loại câu hỏi <span class="text-danger">*</span></label>
+                    <select name="QuestionType" id="questionType" class="form-select" required>
+                        <option value="text" selected="@(Model.QuestionType == "text")">📝 Văn bản tự do</option>
+                        <option value="single" selected="@(Model.QuestionType == "single")">⭕ Chọn 1 đáp án</option>
+                        <option value="multi" selected="@(Model.QuestionType == "multi")">☑️ Chọn nhiều đáp án</option>
+                        <option value="rating" selected="@(Model.QuestionType == "rating")">⭐ Thang điểm</option>
+                        <option value="nps" selected="@(Model.QuestionType == "nps")">📊 NPS (0-10)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Vị trí</label>
+                    <input type="text" class="form-control" value="Câu @Model.OrderIndex" readonly />
+                </div>
+            </div>
+
+            <!-- Options cho text -->
+            <div id="textOptions" class="question-options mb-3" style="display:none;">
+                <label class="form-label">Độ dài tối đa (ký tự)</label>
+                <input type="number" name="MaxLength" class="form-control" value="@Model.MaxLength" />
+            </div>
+
+            <!-- Options cho rating -->
+            <div id="ratingOptions" class="question-options mb-3" style="display:none;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Giá trị nhỏ nhất</label>
+                        <input type="number" name="MinValue" class="form-control" value="@Model.MinValue" step="0.01" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Giá trị lớn nhất</label>
+                        <input type="number" name="MaxValue" class="form-control" value="@Model.MaxValue" step="0.01" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options cho NPS -->
+            <div id="npsOptions" class="question-options mb-3" style="display:none;">
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    NPS (Net Promoter Score) sử dụng thang điểm 0-10
+                </div>
+            </div>
+
+            <!-- Options cho single/multi -->
+            <div id="choicesOptions" class="question-options mb-3" style="display:none;">
+                <label class="form-label">Các lựa chọn <span class="text-danger">*</span></label>
+                <div id="choicesList">
+                    @if (Model.Choices.Any())
+                    {
+                        @foreach (var choice in Model.Choices.OrderBy(c => c.OrderIndex))
+                        {
+                            <div class="input-group mb-2 choice-item">
+                                <span class="input-group-text">@choice.OrderIndex</span>
+                                <input type="text" name="Choices[]" class="form-control" value="@choice.ChoiceText" />
+                                <button type="button" class="btn btn-outline-danger" onclick="removeChoice(this)">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="input-group mb-2 choice-item">
+                            <span class="input-group-text">1</span>
+                            <input type="text" name="Choices[]" class="form-control" placeholder="Lựa chọn 1" />
+                            <button type="button" class="btn btn-outline-danger" onclick="removeChoice(this)" disabled>
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addChoice()">
+                    <i class="bi bi-plus me-1"></i>Thêm lựa chọn
+                </button>
+            </div>
+
+            <div class="form-check mb-4">
+                <input type="checkbox" name="IsRequired" class="form-check-input" id="isRequired" value="true" 
+                       @(Model.IsRequired ? "checked" : "") />
+                <label class="form-check-label" for="isRequired">
+                    Bắt buộc trả lời
+                </label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-admin-primary">
+                    <i class="bi bi-save me-2"></i>Lưu thay đổi
+                </button>
+                <a asp-action="Index" asp-route-surveyId="@Model.SurveyId" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Xử lý thay đổi loại câu hỏi
+    document.getElementById('questionType').addEventListener('change', function() {
+        document.querySelectorAll('.question-options').forEach(el => el.style.display = 'none');
+        
+        const type = this.value;
+        
+        if (type === 'text') {
+            document.getElementById('textOptions').style.display = 'block';
+        } else if (type === 'rating') {
+            document.getElementById('ratingOptions').style.display = 'block';
+        } else if (type === 'nps') {
+            document.getElementById('npsOptions').style.display = 'block';
+        } else if (type === 'single' || type === 'multi') {
+            document.getElementById('choicesOptions').style.display = 'block';
+        }
+    });
+
+    // Validate form trước khi submit
+    document.getElementById('editQuestionForm').addEventListener('submit', function(e) {
+        const type = document.getElementById('questionType').value;
+        
+        // Nếu là single/multi, check phải có ít nhất 2 choices không rỗng
+        if (type === 'single' || type === 'multi') {
+            const choices = Array.from(document.querySelectorAll('#choicesList input[name="Choices[]"]'))
+                .map(input => input.value.trim())
+                .filter(val => val !== '');
+            
+            if (choices.length < 2) {
+                e.preventDefault();
+                alert('⚠️ Câu hỏi dạng chọn phải có ít nhất 2 lựa chọn!');
+                return false;
+            }
+        }
+    });
+
+    function addChoice() {
+        const list = document.getElementById('choicesList');
+        const count = list.querySelectorAll('.choice-item').length + 1;
+        const html = `
+            <div class="input-group mb-2 choice-item">
+                <span class="input-group-text">${count}</span>
+                <input type="text" name="Choices[]" class="form-control" placeholder="Lựa chọn ${count}" />
+                <button type="button" class="btn btn-outline-danger" onclick="removeChoice(this)">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        `;
+        list.insertAdjacentHTML('beforeend', html);
+        updateChoiceNumbers();
+    }
+
+    function removeChoice(btn) {
+        btn.closest('.choice-item').remove();
+        updateChoiceNumbers();
+    }
+
+    function updateChoiceNumbers() {
+        const items = document.querySelectorAll('#choicesList .choice-item');
+        items.forEach((item, index) => {
+            item.querySelector('.input-group-text').textContent = index + 1;
+            item.querySelector('input').placeholder = `Lựa chọn ${index + 1}`;
+            item.querySelector('.btn-outline-danger').disabled = items.length === 1;
+        });
+    }
+
+    // Trigger on load
+    document.getElementById('questionType').dispatchEvent(new Event('change'));
+</script>
+}
+

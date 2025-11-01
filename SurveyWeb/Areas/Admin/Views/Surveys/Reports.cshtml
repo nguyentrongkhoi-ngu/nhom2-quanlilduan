@@ -1,0 +1,78 @@
+@model IEnumerable<SurveyWeb.Areas.Admin.Controllers.SurveysController.SurveyReportVM>
+@{
+    ViewData["Title"] = "B\u00e1o c\u00e1o kh\u1ea3o s\u00e1t";
+}
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">B&#xE1;o c&#xE1;o &amp; Th&#x1ED1;ng k&#xEA;</h3>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            &larr; Quay v&#x1EC1; danh s&#xE1;ch
+        </a>
+    </div>
+    <div class="admin-card-body">
+        <div class="row g-3">
+            @foreach (var item in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column">
+                            @if (!string.IsNullOrEmpty(item.CoverImagePath))
+                            {
+                                <div class="mb-3">
+                                    <img src="~/@item.CoverImagePath" alt="Cover image" class="img-fluid rounded" style="max-height: 140px; object-fit: cover; width: 100%;" />
+                                </div>
+                            }
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="mb-1">@item.Title</h5>
+                                    <div class="text-muted small">@item.TopicName</div>
+                                </div>
+                                <span class="badge text-uppercase @GetStatusClass(item.StatusCode)">@item.StatusCode</span>
+                            </div>
+
+                            <div class="d-flex gap-3 mb-3">
+                                <div>
+                                    <div class="fw-bold">@item.TotalResponses</div>
+                                    <div class="text-muted small">Ph&#x1EA3;n h&#x1ED3;i</div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-success">@item.CompletedResponses</div>
+                                    <div class="text-muted small">Ho&#xE0;n t&#x1EA5;t</div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-warning">@item.InProgress</div>
+                                    <div class="text-muted small">Ch&#x1B0;a g&#x1EED;i</div>
+                                </div>
+                            </div>
+
+                            <div class="text-muted small mb-3">
+                                C&#x1EAD;p nh&#x1EAD;t: @(item.LastResponseAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")
+                            </div>
+
+                            <div class="mt-auto d-flex gap-2">
+                                <a asp-action="Stats" asp-route-id="@item.SurveyId" class="btn btn-sm btn-outline-info flex-grow-1">
+                                    <i class="bi bi-graph-up-arrow me-1"></i>Xem th&#x1ED1;ng k&#xEA;
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.SurveyId" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusClass(string status) => status switch
+    {
+        "active" => "bg-success",
+        "closed" => "bg-danger",
+        "draft" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+}
+

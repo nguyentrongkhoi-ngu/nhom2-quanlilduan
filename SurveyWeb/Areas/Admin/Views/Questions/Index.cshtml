@@ -1,0 +1,336 @@
+﻿@model SurveyWeb.Models.Survey
+
+@{
+    ViewData["Title"] = "Quản lý câu hỏi";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var questions = Model.Questions?.OrderBy(q => q.OrderIndex).ToList() ?? new List<SurveyWeb.Models.Question>();
+    string? coverUrl = string.IsNullOrWhiteSpace(Model.CoverImagePath) ? null : Url.Content("~/" + Model.CoverImagePath);
+}
+
+@functions {
+    string QuestionTypeLabel(string type) => type switch
+    {
+        "text" => "Trả lời tự do",
+        "single" => "Chọn một đáp án",
+        "multi" => "Chọn nhiều đáp án",
+        "rating" => "Thang điểm",
+        "nps" => "Chỉ số NPS",
+        _ => type
+    };
+}
+
+<div class="page-header mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h2 class="mb-1">@Model.Title</h2>
+            <div class="text-muted">@Model.Topic?.Name</div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-light text-dark">Tổng câu hỏi: @questions.Count</span>
+            <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Surveys" asp-action="Edit" asp-route-id="@Model.SurveyId">
+                <i class="bi bi-arrow-left-circle me-1"></i>Quay lại khảo sát
+            </a>
+        </div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(coverUrl))
+    {
+        <div class="mt-3">
+            <img src="@coverUrl" alt="Ảnh bìa khảo sát" class="img-fluid rounded" style="max-height: 180px; object-fit: cover;" />
+        </div>
+    }
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+    </div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title mb-1">Thêm câu hỏi mới</h5>
+                <p class="text-muted small mb-0">Tùy chỉnh loại câu hỏi và ảnh minh họa nếu cần.</p>
+            </div>
+            <div class="admin-card-body">
+                <form asp-action="AddQuestion" method="post" id="addQuestionForm" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="SurveyId" value="@Model.SurveyId" />
+                    <div class="mb-3">
+                        <label class="form-label">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                        <textarea name="QuestionText" class="form-control" rows="3" required placeholder="Nhập nội dung câu hỏi..."></textarea>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label">Loại câu hỏi <span class="text-danger">*</span></label>
+                            <select name="QuestionType" id="questionType" class="form-select" required>
+                                <option value="text">Trả lời tự do</option>
+                                <option value="single">Chọn một đáp án</option>
+                                <option value="multi">Chọn nhiều đáp án</option>
+                                <option value="rating">Thang điểm</option>
+                                <option value="nps">Chỉ số NPS (0-10)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Thứ tự hiển thị</label>
+                            <input type="text" class="form-control" value="@((questions.Count + 1))" readonly />
+                        </div>
+                    </div>
+
+                    <div id="textOptions" class="question-option mb-3" style="display:none;">
+                        <label class="form-label">Giới hạn ký tự</label>
+                        <input type="number" name="MaxLength" class="form-control" placeholder="Ví dụ: 300" />
+                    </div>
+
+                    <div id="ratingOptions" class="question-option mb-3" style="display:none;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Giá trị nhỏ nhất</label>
+                                <input type="number" name="MinValue" class="form-control" value="1" step="0.01" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Giá trị lớn nhất</label>
+                                <input type="number" name="MaxValue" class="form-control" value="5" step="0.01" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="npsOptions" class="question-option mb-3" style="display:none;">
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Chỉ số NPS sử dụng thang điểm chuẩn 0 - 10.
+                        </div>
+                    </div>
+
+                    <div id="choicesOptions" class="question-option mb-3" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Các lựa chọn <span class="text-danger">*</span></label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addChoiceBtn">
+                                <i class="bi bi-plus-lg me-1"></i>Thêm lựa chọn
+                            </button>
+                        </div>
+                        <div id="choicesList" class="d-flex flex-column gap-2">
+                            <div class="input-group choice-item">
+                                <span class="input-group-text">1</span>
+                                <input type="text" name="Choices[]" class="form-control" placeholder="Ví dụ: Rất hài lòng" />
+                                <button type="button" class="btn btn-outline-danger" disabled>
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <div class="input-group choice-item">
+                                <span class="input-group-text">2</span>
+                                <input type="text" name="Choices[]" class="form-control" placeholder="Ví dụ: Hài lòng" />
+                                <button type="button" class="btn btn-outline-danger">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-text mt-1">Cần ít nhất 2 lựa chọn cho câu hỏi dạng trắc nghiệm.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ảnh minh họa (tùy chọn)</label>
+                        <input type="file" name="Image" accept="image/*" class="form-control" id="questionImageInput" />
+                        <div class="form-text">Dung lượng tối đa 2 MB, định dạng JPG/PNG.</div>
+                        <div id="questionImagePreview" class="mt-3 d-none">
+                            <img src="#" alt="Xem trước ảnh câu hỏi" class="img-fluid rounded border" style="max-height: 200px; object-fit: cover;" />
+                            <button type="button" class="btn btn-link text-danger p-0 mt-2" id="clearQuestionImage">
+                                <i class="bi bi-trash"></i> Xóa ảnh đã chọn
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="hidden" name="IsRequired" value="false" />
+                        <input type="checkbox" name="IsRequired" class="form-check-input" id="isRequired" value="true" />
+                        <label class="form-check-label" for="isRequired">Bắt buộc người trả lời</label>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-admin-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Thêm câu hỏi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title mb-0">Danh sách câu hỏi</h5>
+            </div>
+            <div class="admin-card-body">
+                @if (!questions.Any())
+                {
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-ui-checks-grid" style="font-size: 3rem;"></i>
+                        <p class="mt-3 mb-0">Chưa có câu hỏi nào. Hãy thêm câu hỏi đầu tiên!</p>
+                    </div>
+                }
+                else
+                {
+                    foreach (var q in questions)
+                    {
+                        <div class="card shadow-sm border-0 mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div class="flex-grow-1">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                            <span class="badge bg-primary-subtle text-primary fw-semibold">Câu @q.OrderIndex</span>
+                                            <span class="badge bg-light text-muted border">@QuestionTypeLabel(q.QuestionType)</span>
+                                            @if (q.IsRequired)
+                                            {
+                                                <span class="badge bg-danger text-white">Bắt buộc</span>
+                                            }
+                                        </div>
+                                        <h6 class="mb-3">@q.QuestionText</h6>
+                                        @if (!string.IsNullOrWhiteSpace(q.ImagePath))
+                                        {
+                                            <div class="mb-3">
+                                                <img src="@Url.Content("~/" + q.ImagePath)" alt="Ảnh câu hỏi" class="img-fluid rounded border" style="max-height: 220px; object-fit: cover;" />
+                                            </div>
+                                        }
+                                        @if (q.Choices != null && q.Choices.Any())
+                                        {
+                                            <div>
+                                                <label class="text-muted small">Lựa chọn:</label>
+                                                <ul class="list-group list-group-flush">
+                                                    @foreach (var choice in q.Choices.OrderBy(c => c.OrderIndex))
+                                                    {
+                                                        <li class="list-group-item px-0">
+                                                            <span class="badge bg-secondary-subtle text-secondary me-2">@choice.OrderIndex</span>
+                                                            @choice.ChoiceText
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        }
+                                        else if (q.QuestionType == "rating" && q.MinValue.HasValue && q.MaxValue.HasValue)
+                                        {
+                                            <p class="text-muted small mb-0">Khoảng điểm: @q.MinValue - @q.MaxValue</p>
+                                        }
+                                    </div>
+                                    <div class="btn-group-vertical">
+                                        <a asp-action="Edit" asp-route-id="@q.QuestionId" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil-square me-1"></i>Sửa
+                                        </a>
+                                        <form asp-action="DeleteQuestion" asp-route-questionId="@q.QuestionId" asp-route-surveyId="@Model.SurveyId" method="post" asp-antiforgery="true" class="mt-2">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn chắc chắn muốn xóa câu hỏi này?');">
+                                                <i class="bi bi-trash me-1"></i>Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const typeSelect = document.getElementById('questionType');
+        const optionBlocks = {
+            text: document.getElementById('textOptions'),
+            rating: document.getElementById('ratingOptions'),
+            nps: document.getElementById('npsOptions'),
+            choices: document.getElementById('choicesOptions')
+        };
+
+        function refreshOptionVisibility() {
+            const value = typeSelect.value;
+            optionBlocks.text.style.display = value === 'text' ? 'block' : 'none';
+            optionBlocks.rating.style.display = value === 'rating' ? 'block' : 'none';
+            optionBlocks.nps.style.display = value === 'nps' ? 'block' : 'none';
+            optionBlocks.choices.style.display = (value === 'single' || value === 'multi') ? 'block' : 'none';
+            if (value === 'nps') {
+                document.querySelector('input[name="MinValue"]').value = 0;
+                document.querySelector('input[name="MaxValue"]').value = 10;
+            }
+        }
+
+        typeSelect.addEventListener('change', refreshOptionVisibility);
+        refreshOptionVisibility();
+
+        const choicesList = document.getElementById('choicesList');
+        document.getElementById('addChoiceBtn').addEventListener('click', () => {
+            const current = choicesList.querySelectorAll('.choice-item').length + 1;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'input-group choice-item';
+            wrapper.innerHTML = `
+                <span class="input-group-text">${current}</span>
+                <input type="text" name="Choices[]" class="form-control" placeholder="Lựa chọn ${current}" />
+                <button type="button" class="btn btn-outline-danger">
+                    <i class="bi bi-x"></i>
+                </button>
+            `;
+            choicesList.appendChild(wrapper);
+            updateChoiceButtons();
+        });
+
+        function updateChoiceButtons() {
+            const items = choicesList.querySelectorAll('.choice-item');
+            items.forEach((item, index) => {
+                item.querySelector('.input-group-text').textContent = index + 1;
+                item.querySelector('input').placeholder = `Lựa chọn ${index + 1}`;
+                const removeBtn = item.querySelector('button');
+                removeBtn.disabled = items.length <= 2;
+                removeBtn.onclick = () => {
+                    item.remove();
+                    updateChoiceButtons();
+                };
+            });
+        }
+        updateChoiceButtons();
+
+        const imageInput = document.getElementById('questionImageInput');
+        const previewWrapper = document.getElementById('questionImagePreview');
+        const previewImg = previewWrapper.querySelector('img');
+        const clearBtn = document.getElementById('clearQuestionImage');
+
+        imageInput.addEventListener('change', () => {
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    previewImg.src = e.target.result;
+                    previewWrapper.classList.remove('d-none');
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                previewWrapper.classList.add('d-none');
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            imageInput.value = '';
+            previewWrapper.classList.add('d-none');
+        });
+
+        document.getElementById('addQuestionForm').addEventListener('submit', (e) => {
+            const type = typeSelect.value;
+            if (type === 'single' || type === 'multi') {
+                const filledChoices = Array.from(choicesList.querySelectorAll('input[name="Choices[]"]'))
+                    .map(input => input.value.trim())
+                    .filter(val => val !== '');
+                if (filledChoices.length < 2) {
+                    e.preventDefault();
+                    alert('Vui lòng nhập ít nhất 2 lựa chọn cho câu hỏi trắc nghiệm.');
+                }
+            }
+        });
+    </script>
+}

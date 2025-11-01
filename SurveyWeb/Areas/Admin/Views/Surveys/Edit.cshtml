@@ -1,0 +1,204 @@
+@model SurveyWeb.Models.Survey
+@{
+    ViewData["Title"] = "Sửa khảo sát";
+    var topics = ViewBag.Topics as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+}
+
+<div class="admin-card" style="max-width: 900px; margin: 0 auto;">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">Chỉnh sửa khảo sát #@Model.SurveyId</h3>
+    </div>
+    <div class="admin-card-body">
+        <form asp-action="Edit" asp-route-id="@Model.SurveyId" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="SurveyId" />
+            <input type="hidden" asp-for="OwnerUserId" />
+            <input type="hidden" asp-for="CreatedAt" />
+            <input type="hidden" asp-for="CoverImagePath" />
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề khảo sát..." />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Mô tả</label>
+                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả chi tiết về khảo sát..."></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TopicId" class="form-label">Danh mục <span class="text-danger">*</span></label>
+                    <select asp-for="TopicId" asp-items="topics" class="form-select">
+                        <option value="">-- Chọn danh mục --</option>
+                    </select>
+                    <span asp-validation-for="TopicId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="StatusCode" class="form-label">Trạng thái</label>
+                    <select asp-for="StatusCode" asp-items="statusOptions" class="form-select"></select>
+                    <span asp-validation-for="StatusCode" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="StartAt" class="form-label">Ngày bắt đầu</label>
+                    <input type="datetime-local" name="StartAt"
+                           value="@(Model.StartAt?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))"
+                           class="form-control" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="EndAt" class="form-label">Ngày kết thúc</label>
+                    <input type="datetime-local" name="EndAt"
+                           value="@(Model.EndAt?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))"
+                           class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check">
+                    <input asp-for="IsAnonymous" class="form-check-input" type="checkbox" />
+                    <label asp-for="IsAnonymous" class="form-check-label">
+                        Cho phép trả lời ẩn danh
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Cover image</label>
+                @if (!string.IsNullOrEmpty(Model.CoverImagePath))
+                {
+                    <div class="mb-2">
+                        <img src="~/@Model.CoverImagePath" alt="Cover image" class="img-thumbnail" style="max-height: 160px;" />
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="removeCover" value="true" id="removeCoverInput">
+                        <label class="form-check-label" for="removeCoverInput">Remove current image</label>
+                    </div>
+                }
+                <input type="file" name="coverImage" accept="image/*" class="form-control" />
+                <small class="text-muted d-block">Accept JPG, PNG, WEBP (max 2 MB).</small>
+                <span asp-validation-for="CoverImagePath" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-admin-primary">
+                    <i class="bi bi-save me-2"></i>Cập nhật
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quản lý câu hỏi -->
+<div class="admin-card mt-4" style="max-width: 900px; margin: 0 auto; margin-top: 2rem !important;">
+    <div class="admin-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="admin-card-title mb-0" style="color: white;">
+                <i class="bi bi-list-check me-2"></i>Câu hỏi khảo sát (@Model.Questions.Count)
+            </h3>
+            <a asp-area="Admin" asp-controller="Questions" asp-action="Index" asp-route-surveyId="@Model.SurveyId" 
+               class="btn btn-light">
+                <i class="bi bi-gear me-2"></i>Quản lý đầy đủ
+            </a>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        @if (!Model.Questions.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-question-circle" style="font-size: 4rem; color: #667eea; opacity: 0.3;"></i>
+                <h5 class="mt-3 mb-3">Chưa có câu hỏi nào</h5>
+                <p class="text-muted mb-4">
+                    Tạo các câu hỏi với nhiều định dạng: Văn bản, Chọn 1/Nhiều đáp án, Thang điểm, NPS
+                </p>
+                <a asp-area="Admin" asp-controller="Questions" asp-action="Index" asp-route-surveyId="@Model.SurveyId" 
+                   class="btn btn-lg btn-success">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm câu hỏi đầu tiên
+                </a>
+                <div class="mt-4 pt-4 border-top">
+                    <small class="text-muted">
+                        💡 <strong>Gợi ý:</strong> Có thể tạo 5 loại câu hỏi: 
+                        <span class="badge bg-light text-dark">📝 Văn bản</span>
+                        <span class="badge bg-light text-dark">⭕ Chọn 1</span>
+                        <span class="badge bg-light text-dark">☑️ Chọn nhiều</span>
+                        <span class="badge bg-light text-dark">⭐ Thang điểm</span>
+                        <span class="badge bg-light text-dark">📊 NPS</span>
+                    </small>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Danh sách câu hỏi hiện có -->
+            <div class="mb-3">
+                @foreach (var q in Model.Questions.OrderBy(x => x.OrderIndex))
+                {
+                    var typeLabel = q.QuestionType switch
+                    {
+                        "text" => "📝 Văn bản",
+                        "single" => "⭕ Chọn 1",
+                        "multi" => "☑️ Chọn nhiều",
+                        "rating" => "⭐ Thang điểm",
+                        "nps" => "📊 NPS",
+                        _ => q.QuestionType
+                    };
+
+                    <div class="border rounded p-3 mb-2 bg-light">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary">Câu @q.OrderIndex</span>
+                                    <span class="badge bg-secondary">@typeLabel</span>
+                                    @if (q.IsRequired)
+                                    {
+                                        <span class="badge bg-danger">Bắt buộc</span>
+                                    }
+                                </div>
+                                <div class="fw-semibold mb-1">@q.QuestionText</div>
+                                
+                                @if (q.QuestionType == "text" && q.MaxLength.HasValue)
+                                {
+                                    <small class="text-muted">Tối đa: @q.MaxLength ký tự</small>
+                                }
+                                else if ((q.QuestionType == "rating" || q.QuestionType == "nps") && q.MinValue.HasValue && q.MaxValue.HasValue)
+                                {
+                                    <small class="text-muted">Thang: @q.MinValue - @q.MaxValue</small>
+                                }
+                                else if (q.QuestionType == "single" || q.QuestionType == "multi")
+                                {
+                                    <small class="text-muted d-block mt-1">
+                                        @foreach (var c in q.Choices.OrderBy(x => x.OrderIndex))
+                                        {
+                                            <span class="me-2">
+                                                @if (q.QuestionType == "single") { <text>○</text> } else { <text>☐</text> }
+                                                @c.ChoiceText
+                                            </span>
+                                        }
+                                    </small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <div class="text-center py-3">
+                <a asp-area="Admin" asp-controller="Questions" asp-action="Index" asp-route-surveyId="@Model.SurveyId" 
+                   class="btn btn-success">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm/Sửa câu hỏi
+                </a>
+            </div>
+        }
+    </div>
+</div>
+

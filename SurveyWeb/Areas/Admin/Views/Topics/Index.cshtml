@@ -1,0 +1,82 @@
+@model IEnumerable<SurveyWeb.Models.Topic>
+@{
+    ViewData["Title"] = "Quản lý danh mục";
+    var q = ViewBag.Q as string;
+}
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">Danh sách danh mục</h3>
+        <a asp-action="Create" class="btn btn-admin-primary">
+            <i class="bi bi-plus-circle me-2"></i>Thêm danh mục
+        </a>
+    </div>
+    <div class="admin-card-body">
+        <form method="get" class="row g-3 mb-3">
+            <div class="col-md-10">
+                <input type="text" name="q" value="@q" class="form-control" 
+                       placeholder="Tìm theo tên hoặc slug..." />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secondary w-100">
+                    <i class="bi bi-search me-1"></i>Tìm
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên</th>
+                        <th>Slug</th>
+                        <th>Ngày tạo</th>
+                        <th style="width: 180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                Không tìm thấy danh mục nào
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var t in Model)
+                        {
+                            <tr>
+                                <td>@t.TopicId</td>
+                                <td><strong>@t.Name</strong></td>
+                                <td><code>@t.Slug</code></td>
+                                <td>
+                                    <small class="text-muted">
+                                        @t.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@t.TopicId" 
+                                       class="btn btn-sm btn-outline-primary" title="Sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@t.TopicId" method="post" 
+                                          class="d-inline" onsubmit="return confirm('Xóa danh mục này?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,215 @@
+@model SurveyWeb.Areas.Admin.Controllers.AiBuilderController.BuilderViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "AI Survey Builder";
+    var topics = ViewBag.Topics as SelectList ?? new SelectList(Enumerable.Empty<SelectListItem>());
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var preferred = Model.PreferredTypes ?? new List<string>();
+
+    var typeLabels = new Dictionary<string, string>
+    {
+        ["single"] = "Lựa chọn đơn",
+        ["multi"] = "Lựa chọn nhiều",
+        ["rating"] = "Thang điểm 1-5",
+        ["nps"] = "Net Promoter Score (0-10)",
+        ["text"] = "Câu hỏi mở"
+    };
+    string TypeLabel(string type) => typeLabels.TryGetValue(type, out var label) ? label : type;
+    string TypeBadgeClass(string type) => type switch
+    {
+        "single" => "badge bg-primary-subtle text-primary-emphasis",
+        "multi" => "badge bg-info-subtle text-info-emphasis",
+        "rating" => "badge bg-warning-subtle text-warning-emphasis",
+        "nps" => "badge bg-success-subtle text-success-emphasis",
+        _ => "badge bg-secondary-subtle text-secondary-emphasis"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Trình tạo khảo sát bằng AI</h2>
+        <p class="text-muted mb-0">Mô tả nhanh nhu cầu của bạn, hệ thống sẽ gợi ý bộ câu hỏi và bản nháp khảo sát.</p>
+    </div>
+</div>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success alert-admin">
+        <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+    </div>
+}
+
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-admin">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+    </div>
+}
+
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">Thông tin khảo sát mong muốn</h3>
+        <span class="text-muted small">AI sử dụng mô tả để tạo bản nháp tự động.</span>
+    </div>
+    <div class="admin-card-body">
+        <form asp-action="Generate" method="post" class="row g-3">
+            @Html.AntiForgeryToken()
+            <div class="col-md-6">
+                <label asp-for="Topic" class="form-label"></label>
+                <input asp-for="Topic" class="form-control" placeholder="VD: Mức độ hài lòng với dịch vụ giao hàng" />
+                <span asp-validation-for="Topic" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Audience" class="form-label"></label>
+                <input asp-for="Audience" class="form-control" placeholder="VD: Khách hàng doanh nghiệp nhỏ, nhân viên mới..." />
+                <span asp-validation-for="Audience" class="text-danger small"></span>
+            </div>
+            <div class="col-md-12">
+                <label asp-for="Goal" class="form-label"></label>
+                <textarea asp-for="Goal" class="form-control" rows="2" placeholder="VD: Nắm bắt mức độ hài lòng và xác định điểm cần cải thiện."></textarea>
+                <span asp-validation-for="Goal" class="text-danger small"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="QuestionCount" class="form-label"></label>
+                <input asp-for="QuestionCount" class="form-control" type="number" min="1" max="20" />
+                <span asp-validation-for="QuestionCount" class="text-danger small"></span>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Kiểu câu hỏi ưu tiên</label>
+                <div class="border rounded p-3">
+                    @foreach (var kv in typeLabels)
+                    {
+                        var key = kv.Key;
+                        var label = kv.Value;
+                        var id = $"type-{key}";
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="@key" id="@id" name="PreferredTypes"
+                                   @(preferred.Contains(key) ? "checked" : null) />
+                            <label class="form-check-label" for="@id">@label</label>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="TopicId" class="form-label">Gắn vào danh mục</label>
+                <select asp-for="TopicId" asp-items="topics" class="form-select">
+                    <option value="">-- Chọn danh mục --</option>
+                </select>
+                <span asp-validation-for="TopicId" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="StatusCode" class="form-label"></label>
+                <select asp-for="StatusCode" asp-items="statusOptions" class="form-select"></select>
+            </div>
+            <div class="col-md-4 d-flex align-items-center">
+                <div class="form-check mt-4 pt-2">
+                    <input asp-for="IsAnonymous" class="form-check-input" type="checkbox" />
+                    <label asp-for="IsAnonymous" class="form-check-label">Cho phép trả lời ẩn danh</label>
+                </div>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-admin-primary">
+                    <i class="bi bi-magic me-2"></i>Tạo gợi ý bằng AI
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Generated != null)
+{
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title">Bản nháp khảo sát được gợi ý</h3>
+            <span class="text-muted small">Rà soát nội dung, có thể chỉnh sửa rồi lưu thành khảo sát chính thức.</span>
+        </div>
+        <div class="admin-card-body">
+            <form asp-action="Create" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="GeneratedJson" value="@Model.GeneratedJson" />
+
+                <div class="col-md-8">
+                    <label for="Title" class="form-label">Tiêu đề khảo sát</label>
+                    <input id="Title" name="Title" class="form-control" maxlength="300" value="@Model.Generated.Title" />
+                </div>
+                <div class="col-md-4">
+                    <label for="TopicIdCommit" class="form-label">Danh mục áp dụng</label>
+                    <select id="TopicIdCommit" name="TopicId" class="form-select"
+                            asp-for="TopicId" asp-items="topics">
+                        <option value="">-- Chọn danh mục --</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label for="Description" class="form-label">Mô tả khảo sát</label>
+                    <textarea id="Description" name="Description" class="form-control" rows="3">@Model.Generated.Description</textarea>
+                </div>
+                <div class="col-md-4">
+                    <label for="StatusCodeCommit" class="form-label">Trạng thái khi lưu</label>
+                    <select id="StatusCodeCommit" name="StatusCode" class="form-select"
+                            asp-for="StatusCode" asp-items="statusOptions"></select>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <div class="form-check mt-4 pt-2">
+                        <input asp-for="IsAnonymous" class="form-check-input" type="checkbox" id="IsAnonymousCommit" name="IsAnonymous" />
+                        <label class="form-check-label" for="IsAnonymousCommit">Cho phép trả lời ẩn danh</label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Danh sách câu hỏi</h5>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis">@Model.Generated.Questions.Count() câu hỏi</span>
+                    </div>
+
+                    <div class="list-group">
+                        @{
+                            var idx = 1;
+                            foreach (var question in Model.Generated.Questions)
+                            {
+                                <div class="list-group-item list-group-item-action mb-2 rounded-3 border">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-semibold">Câu @idx. @question.Text</div>
+                                        <span class="@TypeBadgeClass(question.Type)">@TypeLabel(question.Type)</span>
+                                    </div>
+                                    @if (question.Choices != null && question.Choices.Any())
+                                    {
+                                        <ul class="list-unstyled ps-3 mb-0">
+                                            @foreach (var choice in question.Choices)
+                                            {
+                                                <li class="small text-muted">
+                                                    <i class="bi bi-dot me-1"></i>@choice
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                    else if (question.MinValue.HasValue && question.MaxValue.HasValue)
+                                    {
+                                        <div class="small text-muted">
+                                            Thang điểm: @question.MinValue.Value - @question.MaxValue.Value
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="small text-muted fst-italic">Câu hỏi mở, người trả lời nhập tự do.</div>
+                                    }
+                                </div>
+                                idx++;
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-repeat me-1"></i>Tạo lại
+                    </a>
+                    <button type="submit" class="btn btn-admin-primary">
+                        <i class="bi bi-save me-2"></i>Lưu thành khảo sát
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+<partial name="_ValidationScriptsPartial" />

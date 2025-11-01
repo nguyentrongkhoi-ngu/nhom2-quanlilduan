@@ -1,0 +1,209 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .stat-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1.75rem;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4f46e5, #06b6d4);
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+        transform: translateY(-4px);
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon.primary {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .stat-icon.success {
+        background: #d1fae5;
+        color: #10b981;
+    }
+
+    .stat-icon.info {
+        background: #dbeafe;
+        color: #3b82f6;
+    }
+
+    .stat-icon.warning {
+        background: #fef3c7;
+        color: #f59e0b;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 0.25rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.9375rem;
+        font-weight: 500;
+    }
+
+    .quick-action-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 1rem 1.25rem;
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        color: #374151;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s;
+        margin-bottom: 0.75rem;
+    }
+
+    .quick-action-btn:hover {
+        background: #eef2ff;
+        border-color: #4f46e5;
+        color: #4f46e5;
+    }
+
+    .quick-action-btn:last-child {
+        margin-bottom: 0;
+    }
+
+    .quick-action-btn i {
+        font-size: 1.25rem;
+    }
+</style>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-value">@ViewBag.TotalUsers</div>
+            <div class="stat-label">Người dùng</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-file-earmark-text-fill"></i>
+            </div>
+            <div class="stat-value">@ViewBag.TotalSurveys</div>
+            <div class="stat-label">Khảo sát</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon info">
+                <i class="bi bi-chat-left-text-fill"></i>
+            </div>
+            <div class="stat-value">@ViewBag.TotalResponses</div>
+            <div class="stat-label">Phản hồi</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-tags-fill"></i>
+            </div>
+            <div class="stat-value">@ViewBag.TotalTopics</div>
+            <div class="stat-label">Danh mục</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title mb-0">
+                    <i class="bi bi-activity me-2"></i>Tổng quan hệ thống
+                </h3>
+            </div>
+            <div class="admin-card-body">
+                <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+                    <div class="stat-icon success" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Hệ thống hoạt động ổn định</div>
+                        <small class="text-muted">Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded">
+                            <div class="text-muted small mb-1">Tỷ lệ hoàn thành</div>
+                            <div class="h4 mb-0">~75%</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded">
+                            <div class="text-muted small mb-1">Thời gian TB</div>
+                            <div class="h4 mb-0">~5 phút</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="quick-action-card">
+            <h5 class="mb-3 fw-bold">
+                <i class="bi bi-lightning-fill me-2" style="color: #f59e0b;"></i>Thao tác nhanh
+            </h5>
+            <a asp-area="Admin" asp-controller="Surveys" asp-action="Create" class="quick-action-btn">
+                <i class="bi bi-plus-circle-fill"></i>
+                Tạo khảo sát mới
+            </a>
+            <a asp-area="Admin" asp-controller="Topics" asp-action="Create" class="quick-action-btn">
+                <i class="bi bi-tag-fill"></i>
+                Thêm danh mục
+            </a>
+            <a asp-area="Public" asp-controller="Home" asp-action="Index" class="quick-action-btn">
+                <i class="bi bi-house-door-fill"></i>
+                Xem trang chủ
+            </a>
+        </div>
+    </div>
+</div>

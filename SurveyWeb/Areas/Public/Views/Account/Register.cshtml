@@ -1,0 +1,108 @@
+@model SurveyWeb.Areas.Public.Controllers.AccountController.RegisterVM
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Đăng ký";
+}
+
+<section class="py-5">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-xl-5 col-lg-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <div class="rounded-circle bg-primary bg-gradient text-white d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;">
+                                <i class="bi bi-stars fs-4"></i>
+                            </div>
+                            <h1 class="h4 fw-bold mb-1">Tạo tài khoản mới</h1>
+                            <p class="text-muted mb-0">Tham gia SurveyWeb để bắt đầu quản lý khảo sát của bạn</p>
+                        </div>
+
+                        @if (ViewBag.Success == true)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                Tài khoản @ViewBag.RegisteredEmail đã được tạo. Bạn có thể đăng nhập ngay bây giờ.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                            </div>
+                        }
+
+                        <form method="post" class="vstack gap-3">
+                            @Html.AntiForgeryToken()
+
+                            <div>
+                                <label asp-for="FullName" class="form-label fw-semibold">
+                                    <i class="bi bi-person me-1"></i>Họ và tên
+                                </label>
+                                <input asp-for="FullName" class="form-control form-control-lg" placeholder="Nguyễn Văn A" />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <div>
+                                <label asp-for="Email" class="form-label fw-semibold">
+                                    <i class="bi bi-envelope me-1"></i>Email
+                                </label>
+                                <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <div>
+                                <label asp-for="Phone" class="form-label fw-semibold">
+                                    <i class="bi bi-telephone me-1"></i>Số điện thoại
+                                </label>
+                                <input asp-for="Phone" class="form-control form-control-lg" placeholder="09xx xxx xxx" />
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Password" class="form-label fw-semibold">
+                                        <i class="bi bi-lock me-1"></i>Mật khẩu
+                                    </label>
+                                    <input asp-for="Password" class="form-control form-control-lg" placeholder="••••••••" />
+                                    <span asp-validation-for="Password" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="ConfirmPassword" class="form-label fw-semibold">
+                                        <i class="bi bi-lock-fill me-1"></i>Xác nhận mật khẩu
+                                    </label>
+                                    <input asp-for="ConfirmPassword" class="form-control form-control-lg" placeholder="••••••••" />
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-check">
+                                <input asp-for="Terms" class="form-check-input" />
+                                <label asp-for="Terms" class="form-check-label">
+                                    Tôi đồng ý với <a asp-area="Public" asp-controller="Home" asp-action="Privacy">điều khoản sử dụng</a>.
+                                </label>
+                                <span asp-validation-for="Terms" class="text-danger small d-block"></span>
+                            </div>
+
+                            <div class="form-check">
+                                <input asp-for="Newsletter" class="form-check-input" />
+                                <label asp-for="Newsletter" class="form-check-label">
+                                    Nhận tin tức và cập nhật khảo sát nổi bật.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-person-plus me-1"></i>Tạo tài khoản
+                            </button>
+                        </form>
+
+                        <hr class="my-4" />
+                        <p class="text-center text-muted mb-0">
+                            Đã có tài khoản?
+                            <a asp-action="Login" class="fw-semibold text-decoration-none">Đăng nhập ngay</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

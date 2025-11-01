@@ -1,0 +1,117 @@
+﻿@model IEnumerable<SurveyWeb.Areas.Admin.Controllers.SurveysController.SurveyRowVM>
+@{
+    ViewData["Title"] = "Qu\u1ea3n l\u00fd kh\u1ea3o s\u00e1t";
+    var q = ViewBag.Q as string;
+    var status = ViewBag.Status as string;
+    var statusOptions = ViewBag.StatusOptions as string[];
+}
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">Danh s&#xE1;ch kh&#x1EA3;o s&#xE1;t</h3>
+        <a asp-action="Create" class="btn btn-admin-primary">
+            <i class="bi bi-plus-circle me-2"></i>T&#x1EA1;o kh&#x1EA3;o s&#xE1;t
+        </a>
+    </div>
+    <div class="admin-card-body">
+        <form method="get" class="row g-3 mb-3">
+            <div class="col-md-6">
+                <input type="text" name="q" value="@q" class="form-control" placeholder="T&#xEC;m theo ti&#xEA;u &#x111;&#x1EC1; ho&#x1EB7;c m&#xE3; t&#x1EA1;o..." />
+            </div>
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">-- T&#x1EA5;t c&#x1EA3; tr&#x1EA1;ng th&#xE1;i --</option>
+                    @if (statusOptions != null)
+                    {
+                        foreach (var st in statusOptions)
+                        {
+                            <option value="@st" selected="@(st == status)">@st</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secondary w-100">
+                    <i class="bi bi-search me-1"></i>T&#xEC;m
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Ti&#xEA;u &#x111;&#x1EC1;</th>
+                        <th>Danh m&#x1EE5;c</th>
+                        <th>Tr&#x1EA1;ng th&#xE1;i</th>
+                        <th>Th&#x1EDD;i gian</th>
+                        <th style="width: 260px;">Thao t&#xE1;c</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                Kh&#xF4;ng t&#xEC;m th&#x1EA5;y kh&#x1EA3;o s&#xE1;t n&#xE0;o
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var s in Model)
+                        {
+                            var statusBadge = s.StatusCode switch
+                            {
+                                "active" => "bg-success",
+                                "draft" => "bg-secondary",
+                                "closed" => "bg-danger",
+                                _ => "bg-secondary"
+                            };
+                            <tr>
+                                <td>@s.SurveyId</td>
+                                <td>
+                                    <strong>@s.Title</strong>
+                                    <div class="text-muted small">T&#x1EA1;o l&#xFA;c @s.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">@s.TopicName</span>
+                                </td>
+                                <td>
+                                    <span class="badge @statusBadge text-uppercase">@s.StatusCode</span>
+                                </td>
+                                <td>
+                                    <div class="small text-muted">B&#x1EAF;t &#x111;&#x1EA7;u: @(s.StartAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")</div>
+                                    <div class="small text-muted">K&#x1EBF;t th&#xFA;c: @(s.EndAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")</div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a asp-area="Admin" asp-controller="Questions" asp-action="Index" asp-route-surveyId="@s.SurveyId"
+                                           class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-list-check me-1"></i>C&#xE2;u h&#x1ECF;i
+                                        </a>
+                                        <a asp-action="Stats" asp-route-id="@s.SurveyId" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-graph-up-arrow me-1"></i>Th&#x1ED1;ng k&#xEA;
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@s.SurveyId" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil me-1"></i>S&#x1EED;a
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@s.SurveyId" method="post" class="d-inline"
+                                              onsubmit="return confirm('X&#xF3;a kh&#x1EA3;o s&#xE1;t n&#xE0;y?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

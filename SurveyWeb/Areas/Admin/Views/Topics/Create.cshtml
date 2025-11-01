@@ -1,0 +1,38 @@
+@model SurveyWeb.Models.Topic
+@{
+    ViewData["Title"] = "Thêm danh mục";
+}
+
+<div class="admin-card" style="max-width: 700px; margin: 0 auto;">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">Thêm danh mục mới</h3>
+    </div>
+    <div class="admin-card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Tên danh mục <span class="text-danger">*</span></label>
+                <input asp-for="Name" class="form-control" placeholder="VD: Công nghệ, Giáo dục..." />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Slug" class="form-label">Slug <span class="text-danger">*</span></label>
+                <input asp-for="Slug" class="form-control" placeholder="VD: cong-nghe, giao-duc..." />
+                <div class="form-text">URL-friendly identifier (chỉ chữ thường, số, gạch ngang)</div>
+                <span asp-validation-for="Slug" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-admin-primary">
+                    <i class="bi bi-save me-2"></i>Lưu danh mục
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
