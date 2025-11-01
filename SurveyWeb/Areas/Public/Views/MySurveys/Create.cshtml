@@ -1,0 +1,88 @@
+@model SurveyWeb.Areas.Public.Controllers.MySurveysController.MySurveyCreateModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Tạo khảo sát";
+    var topics = ViewBag.Topics as SelectList ?? new SelectList(Enumerable.Empty<SelectListItem>());
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<section class="py-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Tạo khảo sát mới</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="returnToCreatePage" value="true" />
+
+                            <div class="mb-3">
+                                <label asp-for="Title" class="form-label"></label>
+                                <input asp-for="Title" class="form-control" />
+                                <span asp-validation-for="Title" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Description" class="form-label"></label>
+                                <textarea asp-for="Description" rows="4" class="form-control"></textarea>
+                                <span asp-validation-for="Description" class="text-danger small"></span>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="TopicId" class="form-label"></label>
+                                    <select asp-for="TopicId" asp-items="topics" class="form-select">
+                                        <option value="">-- Chọn danh mục --</option>
+                                    </select>
+                                    <span asp-validation-for="TopicId" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="StatusCode" class="form-label"></label>
+                                    <select asp-for="StatusCode" asp-items="statusOptions" class="form-select"></select>
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch my-3">
+                                <input class="form-check-input" asp-for="IsAnonymous" />
+                                <label class="form-check-label" asp-for="IsAnonymous">Cho phép trả lời ẩn danh</label>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="StartAt" class="form-label"></label>
+                                    <input asp-for="StartAt" type="datetime-local" class="form-control" />
+                                    <span asp-validation-for="StartAt" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="EndAt" class="form-label"></label>
+                                    <input asp-for="EndAt" type="datetime-local" class="form-control" />
+                                    <span asp-validation-for="EndAt" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Ảnh bìa</label>
+                                <input type="file" name="coverImage" accept="image/*" class="form-control" />
+                                <small class="text-muted">Chấp nhận JPG, PNG, WEBP tối đa 2MB.</small>
+                                <span asp-validation-for="CoverImagePath" class="text-danger small"></span>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i> Tạo khảo sát
+                                </button>
+                                <a asp-action="Index" class="btn btn-outline-secondary">Quay lại danh sách</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<partial name="_ValidationScriptsPartial" />

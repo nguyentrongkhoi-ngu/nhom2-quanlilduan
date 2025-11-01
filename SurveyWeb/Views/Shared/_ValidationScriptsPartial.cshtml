@@ -1,0 +1,22 @@
+<environment include="Development">
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+</environment>
+<environment exclude="Development">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+            asp-fallback-src="~/lib/jquery/dist/jquery.min.js"
+            asp-fallback-test="window.jQuery"
+            integrity="sha512-3gJwYp9jwRVyXvl5Y0H+u2P6pBQ72iLmJ2/WYLVXlerk1ZYwcDrP+EEUWOD8K56J4gR0Y4NIEBwPA7b+X3wRAQ=="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"
+            asp-fallback-src="~/lib/jquery-validation/dist/jquery.validate.min.js"
+            asp-fallback-test="window.jQuery && window.jQuery.validator"
+            integrity="sha512-XasJ5cZKpVXmkci9pEPYtLl63bpeQLqM9ST3w3zMS+hfZCLhcz1M1IcoqJ2Vfq3myxtcQWrc6MH3TKTJX4uz2g=="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"
+            asp-fallback-src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"
+            asp-fallback-test="window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive"
+            integrity="sha512-8wdXCTyMseMeRPJrhIrneDbFQpIywYE1dXfgTP9gQCqMAWvDS6uxsLky5NUansgSS/XUfJEo1F9PCEk5x0GvTg=="
+            crossorigin="anonymous"></script>
+</environment>

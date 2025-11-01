@@ -1,0 +1,569 @@
+@{
+    var defaultSurveyId = ViewData["ChatbotDefaultSurveyId"] as int?;
+    var openInitially = (ViewData["ChatbotOpen"] as bool?) ?? false;
+    var defaultSurveyValue = defaultSurveyId.HasValue ? defaultSurveyId.Value.ToString() : string.Empty;
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    var openAttr = openInitially ? "true" : "false";
+}
+
+<div id="survey-chatbot"
+     class="survey-chatbot @(openInitially ? "open" : "collapsed")"
+     data-open="@openAttr"
+     data-default-survey="@defaultSurveyValue"
+     data-authenticated="@(isAuthenticated.ToString().ToLowerInvariant())">
+    <button type="button" id="survey-chatbot-toggle" class="survey-chatbot-toggle" aria-expanded="@openAttr" aria-controls="survey-chatbot-panel">
+        <i class="bi bi-robot"></i>
+    </button>
+    <div id="survey-chatbot-panel" class="survey-chatbot-panel">
+        <div class="survey-chatbot-header">
+            <div class="survey-chatbot-info">
+                <div class="survey-chatbot-title"><i class="bi bi-stars me-1"></i>Trợ lý khảo sát</div>
+                <div class="survey-chatbot-subtitle" id="survey-chatbot-subtitle">Chọn khảo sát để bắt đầu</div>
+            </div>
+            <button type="button" id="survey-chatbot-close" class="survey-chatbot-close" aria-label="Đóng chatbot">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="survey-chatbot-controls">
+            <label class="form-label" for="survey-chatbot-select">Khảo sát</label>
+            <select id="survey-chatbot-select" class="form-select form-select-sm">
+                <option value="">-- Chọn khảo sát --</option>
+            </select>
+        </div>
+
+        <div class="survey-chatbot-window" id="survey-chatbot-window">
+            <div id="survey-chatbot-messages"></div>
+        </div>
+
+        <div class="survey-chatbot-footer">
+            <form id="survey-chatbot-form" autocomplete="off">
+                <input id="survey-chatbot-input" type="text" placeholder="Nhập câu trả lời hoặc yêu cầu trợ giúp..." />
+                <button type="submit" id="survey-chatbot-send">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+                <button type="button" id="survey-chatbot-suggest" title="Gợi ý trả lời" style="margin-left:8px;">
+                    <i class="bi bi-magic"></i>
+                </button>
+            </form>
+            <div class="survey-chatbot-status" id="survey-chatbot-status"></div>
+        </div>
+    </div>
+</div>
+
+<form id="survey-chatbot-antiforgery" asp-antiforgery="true"></form>
+
+<style>
+    .survey-chatbot {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 1.5rem;
+        width: min(380px, 92vw);
+        max-height: calc(100vh - 3rem);
+        z-index: 1060;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        pointer-events: none;
+    }
+
+    .survey-chatbot-panel {
+        width: 100%;
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        pointer-events: none;
+    }
+
+    .survey-chatbot.open .survey-chatbot-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .survey-chatbot-toggle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 14px 30px rgba(99, 102, 241, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        pointer-events: auto;
+        cursor: pointer;
+    }
+
+    .survey-chatbot-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 36px rgba(99, 102, 241, 0.38);
+    }
+
+    .survey-chatbot.open .survey-chatbot-toggle {
+        display: none;
+    }
+
+    .survey-chatbot-header {
+        padding: 1.1rem 1.25rem;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.05));
+        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .survey-chatbot-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #111827;
+    }
+
+    .survey-chatbot-subtitle {
+        font-size: 0.9rem;
+        color: #475569;
+    }
+
+    .survey-chatbot-close {
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        transition: background 0.2s ease, color 0.2s ease;
+        cursor: pointer;
+    }
+
+    .survey-chatbot-close:hover {
+        background: rgba(148, 163, 184, 0.2);
+        color: #1f2937;
+    }
+
+    .survey-chatbot-controls {
+        padding: 1rem 1.25rem 0.5rem;
+    }
+
+    .survey-chatbot-window {
+        flex: 1;
+        padding: 1.1rem 1.25rem;
+        overflow-y: auto;
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 60%);
+    }
+
+    .survey-chatbot-window::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .survey-chatbot-window::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.6);
+        border-radius: 999px;
+    }
+
+    #survey-chatbot-messages .chat-message {
+        display: flex;
+        margin-bottom: 0.9rem;
+    }
+
+    #survey-chatbot-messages .chat-message.user {
+        justify-content: flex-end;
+    }
+
+    #survey-chatbot-messages .chat-bubble {
+        max-width: 75%;
+        padding: 0.75rem 1rem;
+        border-radius: 16px;
+        font-size: 0.94rem;
+        line-height: 1.45;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    #survey-chatbot-messages .chat-message.user .chat-bubble {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
+    }
+
+    #survey-chatbot-messages .chat-message.bot .chat-bubble {
+        background: #ffffff;
+        color: #1e293b;
+        border-bottom-left-radius: 4px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .survey-chatbot-footer {
+        padding: 0.9rem 1.25rem 1rem;
+        border-top: 1px solid rgba(226, 232, 240, 0.9);
+        background: rgba(248, 250, 252, 0.96);
+        backdrop-filter: blur(6px);
+    }
+
+    #survey-chatbot-form {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    #survey-chatbot-input {
+        flex: 1;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        padding: 0.75rem 1.2rem;
+        font-size: 0.95rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #survey-chatbot-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    #survey-chatbot-send {
+        border: none;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #ffffff;
+        padding: 0.7rem 1.2rem;
+        border-radius: 999px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+
+    #survey-chatbot-send:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
+    }
+
+    #survey-chatbot-send:disabled {
+        background: rgba(148, 163, 184, 0.45);
+        cursor: not-allowed;
+    }
+
+    .survey-chatbot-status {
+        font-size: 0.82rem;
+        color: #64748b;
+        margin-top: 0.45rem;
+        min-height: 1.2rem;
+    }
+
+    @@media (max-width: 768px) {
+        .survey-chatbot {
+            left: 0.75rem;
+            right: 0.75rem;
+            bottom: 0.75rem;
+            width: auto;
+            max-height: calc(100vh - 1.5rem);
+        }
+    }
+</style>
+
+<script>
+    (() => {
+        if (window.SurveyChatbotInitialized) return;
+        window.SurveyChatbotInitialized = true;
+
+        const root = document.getElementById('survey-chatbot');
+        if (!root) return;
+
+        const toggleBtn = document.getElementById('survey-chatbot-toggle');
+        const closeBtn = document.getElementById('survey-chatbot-close');
+        const panel = document.getElementById('survey-chatbot-panel');
+        const selectEl = document.getElementById('survey-chatbot-select');
+        const messagesEl = document.getElementById('survey-chatbot-messages');
+        const windowEl = document.getElementById('survey-chatbot-window');
+        const formEl = document.getElementById('survey-chatbot-form');
+        const inputEl = document.getElementById('survey-chatbot-input');
+        const sendBtn = document.getElementById('survey-chatbot-send');
+        const statusEl = document.getElementById('survey-chatbot-status');
+        const subtitleEl = document.getElementById('survey-chatbot-subtitle');
+        const antiforgeryInput = document.querySelector('#survey-chatbot-antiforgery input[name="__RequestVerificationToken"]');
+        const token = antiforgeryInput ? antiforgeryInput.value : null;
+
+        const defaultSurveyId = parseInt(root.dataset.defaultSurvey || '0', 10);
+        const openInitially = root.dataset.open === 'true';
+        const isAuthenticated = root.dataset.authenticated === 'true'; // không chặn khách vãng lai
+
+        let conversationId = null;
+        let currentSurveyId = null;
+        let currentSurveyTitle = '';
+        let busy = false;
+        let completed = false;
+        let surveys = [];
+
+        const setOpen = open => {
+            if (open) {
+                root.classList.remove('collapsed');
+                root.classList.add('open');
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                root.classList.remove('open');
+                root.classList.add('collapsed');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        };
+
+        if (openInitially) {
+            setOpen(true);
+        }
+
+        toggleBtn.addEventListener('click', () => setOpen(!root.classList.contains('open')));
+        closeBtn.addEventListener('click', () => setOpen(false));
+
+        const appendMessage = (sender, text) => {
+            if (!text) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = `chat-message ${sender === 'user' ? 'user' : 'bot'}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.innerHTML = text.replace(/\n/g, '<br>');
+            wrapper.appendChild(bubble);
+
+            messagesEl.appendChild(wrapper);
+            windowEl.scrollTop = windowEl.scrollHeight;
+        };
+
+        const clearMessages = () => {
+            messagesEl.innerHTML = '';
+        };
+
+        const setStatus = text => {
+            statusEl.textContent = text || '';
+        };
+
+        const setBusy = state => {
+            busy = state;
+            const disabled = state || !conversationId || completed;
+            inputEl.disabled = disabled;
+            sendBtn.disabled = disabled;
+        };
+
+        const resetConversation = () => {
+            conversationId = null;
+            completed = false;
+            clearMessages();
+            setStatus('');
+            appendMessage('bot', 'Hãy chọn khảo sát để bắt đầu trò chuyện.');
+            setBusy(false);
+        };
+
+        const populateSurveys = list => {
+            surveys = list || [];
+            selectEl.innerHTML = '<option value="">-- Chọn khảo sát --</option>';
+            surveys.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.surveyId;
+                option.textContent = item.title;
+                selectEl.appendChild(option);
+            });
+
+            if (surveys.length === 0) {
+                setStatus('Hiện chưa có khảo sát nào đang mở.');
+                selectEl.disabled = true;
+                inputEl.disabled = true;
+                sendBtn.disabled = true;
+                return;
+            }
+
+            selectEl.disabled = false;
+
+            if (defaultSurveyId > 0) {
+                const exists = surveys.find(s => s.surveyId === defaultSurveyId);
+                if (exists) {
+                    selectEl.value = defaultSurveyId.toString();
+                    startConversation(defaultSurveyId, exists.title);
+                    return;
+                }
+            }
+
+            if (surveys.length === 1) {
+                selectEl.value = surveys[0].surveyId.toString();
+                startConversation(surveys[0].surveyId, surveys[0].title);
+            } else {
+                setStatus('Chọn một khảo sát để bắt đầu.');
+            }
+        };
+
+        const handleAuthRequired = () => { /* Cho phép dùng không cần đăng nhập */ };
+
+        const loadSurveys = async () => {
+            // Cho phép dùng không cần đăng nhập
+
+            try {
+                setStatus('Đang tải danh sách khảo sát...');
+                const response = await fetch('/api/public/chatbot/surveys', {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                // Bỏ chặn 401 để hiển thị lỗi thông thường
+
+                if (!response.ok) {
+                    throw new Error('Không thể lấy danh sách khảo sát.');
+                }
+
+                const data = await response.json();
+                populateSurveys(data || []);
+            } catch (err) {
+                setStatus(err.message || 'Không thể tải dữ liệu khảo sát.');
+                console.error(err);
+            } finally {
+                setBusy(false);
+            }
+        };
+
+        const startConversation = async (surveyId, surveyTitle) => {
+            // Cho phép dùng không cần đăng nhập
+
+            if (!surveyId || !token) {
+                setStatus('Không thể bắt đầu cuộc trò chuyện. Thiếu thông tin.');
+                return;
+            }
+
+            setBusy(true);
+            clearMessages();
+            setStatus('Đang khởi tạo cuộc trò chuyện...');
+            conversationId = null;
+            completed = false;
+            currentSurveyId = surveyId;
+            currentSurveyTitle = surveyTitle || '';
+            subtitleEl.textContent = surveyTitle ? `Khảo sát: ${surveyTitle}` : 'Trợ lý khảo sát';
+
+            try {
+                const response = await fetch('/api/public/chatbot/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ surveyId })
+                });
+
+                // Bỏ chặn 401 để hiển thị lỗi thông thường
+
+                if (!response.ok) {
+                    throw new Error('Không thể bắt đầu chatbot.');
+                }
+
+                const data = await response.json();
+                conversationId = data.conversationId;
+                (data.messages || []).forEach(msg => appendMessage(msg.sender || 'bot', msg.text || ''));
+                setStatus('Bạn có thể nhập câu trả lời của mình.');
+                setBusy(false);
+                inputEl.focus();
+            } catch (err) {
+                setStatus(err.message || 'Không thể khởi tạo chatbot.');
+                console.error(err);
+                setBusy(false);
+            }
+        };
+
+        const sendMessage = async text => {
+            if (!conversationId || !currentSurveyId) {
+                setStatus('Hãy chọn khảo sát để bắt đầu.');
+                return;
+            }
+
+            if (!token) {
+                setStatus('Thiếu mã xác thực.');
+                return;
+            }
+
+            setBusy(true);
+            appendMessage('user', text);
+            setStatus('Đang xử lý...');
+
+            try {
+                const response = await fetch('/api/public/chatbot/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ conversationId, message: text })
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (response.status === 401) {
+                    handleAuthRequired();
+                    return;
+                }
+
+                if (!response.ok) {
+                    if (response.status === 410) {
+                        appendMessage('bot', 'Phiên trò chuyện đã kết thúc. Bạn có thể chọn khảo sát để bắt đầu lại.');
+                        completed = true;
+                        setStatus('Phiên đã kết thúc.');
+                        return;
+                    }
+
+                    setStatus(data.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                    return;
+                }
+
+                (data.messages || []).forEach(msg => appendMessage(msg.sender || 'bot', msg.text || ''));
+                completed = data.completed === true;
+                if (completed) {
+                    setStatus('Khảo sát đã hoàn thành. Cảm ơn bạn!');
+                } else {
+                    setStatus('Chờ câu trả lời của bạn.');
+                }
+            } catch (err) {
+                console.error(err);
+                setStatus('Không gửi được tin nhắn. Vui lòng thử lại.');
+            } finally {
+                setBusy(false);
+            }
+        };
+
+        formEl.addEventListener('submit', evt => {
+            evt.preventDefault();
+            if (busy || completed) return;
+            const value = inputEl.value.trim();
+            if (!value) return;
+            inputEl.value = '';
+            sendMessage(value);
+        });
+
+        const suggestBtn = document.getElementById('survey-chatbot-suggest');
+        if (suggestBtn) {
+            suggestBtn.addEventListener('click', () => {
+                if (busy || completed) return;
+                sendMessage('gợi ý');
+            });
+        }
+
+        selectEl.addEventListener('change', () => {
+            const selected = parseInt(selectEl.value, 10);
+            if (!selected) {
+                resetConversation();
+                return;
+            }
+            const survey = surveys.find(s => s.surveyId === selected);
+            startConversation(selected, survey ? survey.title : '');
+        });
+
+        resetConversation();
+
+        loadSurveys();
+    })();
+</script>

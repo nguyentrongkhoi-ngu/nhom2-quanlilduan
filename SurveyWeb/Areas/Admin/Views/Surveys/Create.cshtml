@@ -1,0 +1,87 @@
+@model SurveyWeb.Models.Survey
+@{
+    ViewData["Title"] = "Tạo khảo sát";
+    var topics = ViewBag.Topics as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+}
+
+<div class="admin-card" style="max-width: 900px; margin: 0 auto;">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">Tạo khảo sát mới</h3>
+    </div>
+    <div class="admin-card-body">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề khảo sát..." />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Mô tả</label>
+                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả chi tiết về khảo sát..."></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TopicId" class="form-label">Danh mục <span class="text-danger">*</span></label>
+                    <select asp-for="TopicId" asp-items="topics" class="form-select">
+                        <option value="">-- Chọn danh mục --</option>
+                    </select>
+                    <span asp-validation-for="TopicId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="StatusCode" class="form-label">Trạng thái</label>
+                    <select asp-for="StatusCode" asp-items="statusOptions" class="form-select"></select>
+                    <span asp-validation-for="StatusCode" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="StartAt" class="form-label">Ngày bắt đầu</label>
+                    <input type="datetime-local" asp-for="StartAt" 
+                           value="@(Model.StartAt?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))"
+                           class="form-control" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="EndAt" class="form-label">Ngày kết thúc</label>
+                    <input type="datetime-local" asp-for="EndAt"
+                           value="@(Model.EndAt?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))"
+                           class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check">
+                    <input asp-for="IsAnonymous" class="form-check-input" type="checkbox" />
+                    <label asp-for="IsAnonymous" class="form-check-label">
+                        Cho phép trả lời ẩn danh
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Cover image</label>
+                <input type="file" name="coverImage" accept="image/*" class="form-control" />
+                <small class="text-muted">Accept JPG, PNG, WEBP files up to 2 MB.</small>
+                <span asp-validation-for="CoverImagePath" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-admin-primary">
+                    <i class="bi bi-save me-2"></i>Lưu khảo sát
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+

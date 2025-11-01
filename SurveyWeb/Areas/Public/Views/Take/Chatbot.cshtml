@@ -1,0 +1,319 @@
+@model SurveyWeb.Areas.Public.Controllers.TakeController.ChatbotViewModel
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Chatbot khảo sát";
+}
+
+<style>
+    .chatbot-container {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 1.5rem;
+        width: min(380px, 92vw);
+        max-height: calc(100vh - 3rem);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        z-index: 1060;
+    }
+
+    .chatbot-header {
+        padding: 1.4rem 1.6rem;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.05));
+        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+    }
+
+    .chatbot-header h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: #111827;
+    }
+
+    .chatbot-header p {
+        color: #475569;
+        margin-bottom: 0;
+    }
+
+    .chat-window {
+        flex: 1;
+        padding: 1.25rem 1.5rem;
+        overflow-y: auto;
+        background: radial-gradient(circle at top, rgba(99, 102, 241, 0.08), transparent);
+    }
+
+    .chat-message {
+        display: flex;
+        margin-bottom: 1rem;
+    }
+
+    .chat-message.user {
+        justify-content: flex-end;
+    }
+
+    .chat-bubble {
+        max-width: 75%;
+        padding: 0.85rem 1rem;
+        border-radius: 16px;
+        font-size: 0.97rem;
+        line-height: 1.45;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .chat-message.user .chat-bubble {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+    }
+
+    .chat-message.bot .chat-bubble {
+        background: #fff;
+        color: #1e293b;
+        border-bottom-left-radius: 4px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .chat-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid rgba(226, 232, 240, 0.9);
+        background: rgba(248, 250, 252, 0.9);
+        backdrop-filter: blur(6px);
+    }
+
+    .chat-footer form {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .chat-footer input[type="text"] {
+        flex: 1;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        padding: 0.85rem 1.2rem;
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .chat-footer input[type="text"]:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    .chat-footer button {
+        border: none;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        padding: 0.85rem 1.5rem;
+        border-radius: 999px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .chat-footer button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
+    }
+
+    .chat-status {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+        min-height: 1.2rem;
+    }
+
+    @@media (max-width: 768px) {
+        .chatbot-container {
+            left: 0.75rem;
+            right: 0.75rem;
+            bottom: 0.75rem;
+            width: auto;
+            max-height: calc(100vh - 1.5rem);
+            border-radius: 14px;
+        }
+    }
+</style>
+
+<div class="chatbot-container">
+    <div class="chatbot-header">
+        <h2>Khảo sát: @Model.SurveyTitle</h2>
+        <p>Trò chuyện với chatbot AI để hoàn thành khảo sát. Bạn có thể gõ "gợi ý" hoặc "nhắc lại" khi cần trợ giúp.</p>
+    </div>
+
+    <div class="chat-window" id="chat-window">
+        <div id="chat-messages"></div>
+    </div>
+
+    <div class="chat-footer">
+        <form id="chat-form" autocomplete="off">
+            <input id="chat-input" type="text" placeholder="Nhập câu trả lời hoặc yêu cầu trợ giúp..." />
+            <button id="chat-send" type="submit">
+                <i class="bi bi-send-fill"></i>
+                Gửi
+            </button>
+            <button id="chat-suggest" type="button" title="Gợi ý trả lời" style="margin-left:8px;">
+                <i class="bi bi-magic"></i>
+                Gợi ý
+            </button>
+        </form>
+        <div class="chat-status" id="chat-status"></div>
+    </div>
+</div>
+
+<form id="chat-antiforgery" asp-antiforgery="true"></form>
+
+@section Scripts {
+    <script>
+        (() => {
+            const surveyId = @Model.SurveyId;
+            const messagesEl = document.getElementById('chat-messages');
+            const windowEl = document.getElementById('chat-window');
+            const formEl = document.getElementById('chat-form');
+            const inputEl = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('chat-send');
+            const suggestBtn = document.getElementById('chat-suggest');
+            const statusEl = document.getElementById('chat-status');
+            const token = document.querySelector('#chat-antiforgery input[name="__RequestVerificationToken"]').value;
+
+            let conversationId = null;
+            let completed = false;
+            let busy = false;
+
+            const appendMessage = (sender, text) => {
+                const row = document.createElement('div');
+                row.className = sender === 'user' ? 'chat-message user' : 'chat-message bot';
+
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble';
+                bubble.innerHTML = (text || '').replace(/\n/g, '<br>');
+
+                row.appendChild(bubble);
+                messagesEl.appendChild(row);
+                windowEl.scrollTop = windowEl.scrollHeight;
+            };
+
+            const setStatus = (text) => {
+                statusEl.textContent = text || '';
+            };
+
+            const setBusy = (state) => {
+                busy = state;
+                inputEl.disabled = state || completed;
+                sendBtn.disabled = state || completed;
+                if (suggestBtn) suggestBtn.disabled = state || completed;
+            };
+
+            const handleError = (message) => {
+                setStatus(message);
+                appendMessage('bot', message);
+            };
+
+            const startConversation = async () => {
+                setBusy(true);
+                setStatus('Đang kết nối với chatbot...');
+                try {
+                    const response = await fetch('/api/public/chatbot/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ surveyId })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ message: 'Không thể khởi tạo chatbot.' }));
+                        handleError(error.message || 'Không thể khởi tạo chatbot.');
+                        setBusy(false);
+                        return;
+                    }
+
+                    const data = await response.json();
+                    conversationId = data.conversationId;
+                    (data.messages || []).forEach(msg => appendMessage(msg.sender || 'bot', msg.text || ''));
+                    setStatus('Bạn có thể nhập câu trả lời của mình.');
+                } catch (err) {
+                    handleError('Không thể kết nối tới chatbot. Vui lòng thử lại sau.');
+                } finally {
+                    setBusy(false);
+                }
+            };
+
+            const sendMessage = async (text) => {
+                if (!conversationId) {
+                    handleError('Phiên trò chuyện chưa sẵn sàng. Vui lòng tải lại trang.');
+                    return;
+                }
+
+                setBusy(true);
+                appendMessage('user', text);
+                setStatus('Đang xử lý...');
+
+                try {
+                    const response = await fetch('/api/public/chatbot/message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ conversationId, message: text })
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        if (response.status === 410) {
+                            appendMessage('bot', 'Phiên trò chuyện đã kết thúc. Bạn có thể tải lại trang để bắt đầu lại.');
+                            completed = true;
+                            setBusy(false);
+                            setStatus('Phiên đã kết thúc.');
+                            return;
+                        }
+
+                        handleError(data.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                        return;
+                    }
+
+                    (data.messages || []).forEach(msg => appendMessage(msg.sender || 'bot', msg.text || ''));
+                    completed = data.completed === true;
+                    if (completed) {
+                        setStatus('Khảo sát đã hoàn thành. Cảm ơn bạn!');
+                    } else {
+                        setStatus('Chờ câu trả lời của bạn.');
+                    }
+                } catch (err) {
+                    handleError('Không gửi được tin nhắn. Vui lòng thử lại.');
+                } finally {
+                    setBusy(false);
+                }
+            };
+
+            formEl.addEventListener('submit', (evt) => {
+                evt.preventDefault();
+                if (busy || completed) return;
+
+                const value = inputEl.value.trim();
+                if (!value) return;
+
+                inputEl.value = '';
+                sendMessage(value);
+            });
+
+            if (suggestBtn) {
+                suggestBtn.addEventListener('click', () => {
+                    if (busy || completed) return;
+                    sendMessage('gợi ý');
+                });
+            }
+
+            startConversation();
+        })();
+    </script>
+}

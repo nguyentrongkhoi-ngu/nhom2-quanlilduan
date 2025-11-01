@@ -1,0 +1,174 @@
+@model SurveyWeb.Areas.Public.Controllers.MySurveysController.MySurveysViewModel
+@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Khảo sát của tôi";
+    var topics = ViewBag.Topics as SelectList ?? new SelectList(Enumerable.Empty<SelectListItem>());
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 pb-0">
+                <h5 class="card-title mb-1">Tạo khảo sát mới</h5>
+                <p class="text-muted small mb-0">Điền thông tin cơ bản để khởi tạo khảo sát của bạn.</p>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label asp-for="CreateForm.Title" class="form-label"></label>
+                        <input asp-for="CreateForm.Title" class="form-control" />
+                        <span asp-validation-for="CreateForm.Title" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CreateForm.Description" class="form-label"></label>
+                        <textarea asp-for="CreateForm.Description" rows="3" class="form-control"></textarea>
+                        <span asp-validation-for="CreateForm.Description" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CreateForm.TopicId" class="form-label"></label>
+                        <select asp-for="CreateForm.TopicId" asp-items="topics" class="form-select">
+                            <option value="">-- Chọn danh mục --</option>
+                        </select>
+                        <span asp-validation-for="CreateForm.TopicId" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CreateForm.StatusCode" class="form-label"></label>
+                        <select asp-for="CreateForm.StatusCode" asp-items="statusOptions" class="form-select"></select>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" asp-for="CreateForm.IsAnonymous" />
+                        <label class="form-check-label" asp-for="CreateForm.IsAnonymous">Cho phép trả lời ẩn danh</label>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CreateForm.StartAt" class="form-label"></label>
+                            <input asp-for="CreateForm.StartAt" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="CreateForm.StartAt" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CreateForm.EndAt" class="form-label"></label>
+                            <input asp-for="CreateForm.EndAt" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="CreateForm.EndAt" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-3">
+                        <i class="bi bi-plus-circle me-1"></i> Tạo khảo sát
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="card-title mb-1">Danh sách khảo sát</h5>
+                    <p class="text-muted small mb-0">Bạn có thể quản lý và tiếp tục chỉnh sửa các khảo sát đã tạo.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (TempData["Success"] is string success)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>@success
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["Error"] is string error)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>@error
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (!Model.Surveys.Any())
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-clipboard2-check display-6 d-block mb-2"></i>
+                        Bạn chưa có khảo sát nào. Hãy bắt đầu bằng cách tạo khảo sát mới.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tiêu đề</th>
+                                    <th>Trạng thái</th>
+                                    <th>Danh mục</th>
+                                    <th class="text-center">Câu hỏi</th>
+                                    <th>Thời gian</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var survey in Model.Surveys)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">@survey.Title</div>
+                                        <div class="text-muted small">Tạo ngày @survey.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusBadge = survey.StatusCode switch
+                                            {
+                                                "active" => "badge bg-success-subtle text-success-emphasis",
+                                                "closed" => "badge bg-secondary-subtle text-secondary-emphasis",
+                                                _ => "badge bg-warning-subtle text-warning-emphasis"
+                                            };
+                                            var statusText = survey.StatusCode switch
+                                            {
+                                                "active" => "Đang mở",
+                                                "closed" => "Đã đóng",
+                                                _ => "Nháp"
+                                            };
+                                        }
+                                        <span class="@statusBadge">@statusText</span>
+                                    </td>
+                                    <td>@(survey.TopicName ?? "-")</td>
+                                    <td class="text-center">@survey.QuestionCount</td>
+                                    <td>
+                                        <div class="small">
+                                            @if (survey.StartAt.HasValue)
+                                            {
+                                                <div>Bắt đầu: @survey.StartAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                            }
+                                            @if (survey.EndAt.HasValue)
+                                            {
+                                                <div>Kết thúc: @survey.EndAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                            }
+                                            @if (!survey.StartAt.HasValue && !survey.EndAt.HasValue)
+                                            {
+                                                <div>Không giới hạn thời gian</div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-action="Stats" asp-route-id="@survey.SurveyId" class="btn btn-outline-secondary btn-sm"><i class="bi bi-graph-up me-1"></i> Thống kê</a>
+                                        <a asp-action="Edit" asp-route-id="@survey.SurveyId" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square me-1"></i> Sửa</a>
+                                        <form asp-action="Delete" asp-route-id="@survey.SurveyId" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Xóa khảo sát này?');">
+                                                <i class="bi bi-trash me-1"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ValidationScriptsPartial" />

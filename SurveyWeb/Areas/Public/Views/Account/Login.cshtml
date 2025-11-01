@@ -1,0 +1,80 @@
+@model SurveyWeb.Areas.Public.Controllers.AccountController.LoginVM
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<section class="py-5">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-xl-4 col-lg-5 col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <div class="rounded-circle bg-primary bg-gradient text-white d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;">
+                                <i class="bi bi-stars fs-4"></i>
+                            </div>
+                            <h1 class="h4 fw-bold mb-1">Chào mừng trở lại</h1>
+                            <p class="text-muted mb-0">Đăng nhập để tiếp tục với SurveyWeb</p>
+                        </div>
+
+                        @if (ViewData["Error"] is string error && !string.IsNullOrWhiteSpace(error))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-circle me-2"></i>@error
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                            </div>
+                        }
+
+                        <form method="post" class="vstack gap-3">
+                            @Html.AntiForgeryToken()
+                            <div>
+                                <label asp-for="Email" class="form-label fw-semibold">
+                                    <i class="bi bi-envelope me-1"></i>Email
+                                </label>
+                                <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <div>
+                                <label asp-for="Password" class="form-label fw-semibold">
+                                    <i class="bi bi-lock me-1"></i>Mật khẩu
+                                </label>
+                                <input asp-for="Password" class="form-control form-control-lg" placeholder="••••••••" />
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-check">
+                                <input asp-for="Remember" class="form-check-input" />
+                                <label asp-for="Remember" class="form-check-label">
+                                    Ghi nhớ đăng nhập
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+                            </button>
+                        </form>
+
+                        <hr class="my-4" />
+                        <p class="text-center text-muted mb-1">Chưa có tài khoản?</p>
+                        <div class="d-grid">
+                            <a asp-action="Register" class="btn btn-outline-primary">
+                                <i class="bi bi-person-plus me-1"></i>Đăng ký ngay
+                            </a>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a asp-area="Public" asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted">
+                                <i class="bi bi-arrow-left me-1"></i>Về trang chủ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
