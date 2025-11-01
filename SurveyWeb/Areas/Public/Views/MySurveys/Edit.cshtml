@@ -1,0 +1,97 @@
+@model SurveyWeb.Models.Survey
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Chỉnh sửa khảo sát";
+    var topics = ViewBag.Topics as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var statusOptions = ViewBag.StatusOptions as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+}
+
+<section class="py-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Chỉnh sửa khảo sát</h5>
+                        <div>
+                            <a asp-area="Public" asp-controller="MyQuestions" asp-action="Index" asp-route-surveyId="@Model.SurveyId" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i> Thêm/Quản lý câu hỏi
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" asp-for="SurveyId" />
+
+                            <div class="mb-3">
+                                <label asp-for="Title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                                <input asp-for="Title" class="form-control" />
+                                <span asp-validation-for="Title" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Description" class="form-label">Mô tả</label>
+                                <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                                <span asp-validation-for="Description" class="text-danger"></span>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="TopicId" class="form-label">Danh mục <span class="text-danger">*</span></label>
+                                    <select asp-for="TopicId" asp-items="topics" class="form-select">
+                                        <option value="">-- Chọn danh mục --</option>
+                                    </select>
+                                    <span asp-validation-for="TopicId" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="StatusCode" class="form-label">Trạng thái</label>
+                                    <select asp-for="StatusCode" asp-items="statusOptions" class="form-select"></select>
+                                    <span asp-validation-for="StatusCode" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="StartAt" class="form-label">Ngày bắt đầu</label>
+                                    <input type="datetime-local" asp-for="StartAt" value="@(Model.StartAt?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="EndAt" class="form-label">Ngày kết thúc</label>
+                                    <input type="datetime-local" asp-for="EndAt" value="@(Model.EndAt?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))" class="form-control" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input asp-for="IsAnonymous" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsAnonymous" class="form-check-label">Cho phép trả lời ẩn danh</label>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Ảnh bìa</label>
+                                <input type="file" name="coverImage" accept="image/*" class="form-control" />
+                                <small class="text-muted">Tối đa 2MB; jpg/png/webp.</small>
+                                <span asp-validation-for="CoverImagePath" class="text-danger"></span>
+                                @if (!string.IsNullOrWhiteSpace(Model.CoverImagePath))
+                                {
+                                    <div class="form-check mt-2">
+                                        <input type="checkbox" class="form-check-input" name="removeCover" id="removeCover" />
+                                        <label for="removeCover" class="form-check-label">Gỡ ảnh bìa hiện tại</label>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Lưu</button>
+                                <a asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<partial name="_ValidationScriptsPartial" />

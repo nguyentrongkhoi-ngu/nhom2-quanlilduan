@@ -1,0 +1,121 @@
+@model SurveyWeb.Models.Survey
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Title;
+    var now = DateTime.UtcNow;
+    bool IsActive(SurveyWeb.Models.Survey survey)
+    {
+        if (!string.Equals(survey.StatusCode, "active", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (survey.StartAt.HasValue && survey.StartAt.Value > now) return false;
+        if (survey.EndAt.HasValue && survey.EndAt.Value < now) return false;
+        return true;
+    }
+}
+
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                            <span class="badge bg-light text-primary fw-semibold">
+                                <i class="bi bi-bookmark-star me-1"></i>@Model.Topic?.Name
+                            </span>
+                            <span class="badge bg-@(IsActive(Model) ? "success" : "secondary")">
+                                @(IsActive(Model) ? "Đang mở" : "Tạm dừng")
+                            </span>
+                        </div>
+                        <h1 class="h3 fw-bold mb-3">@Model.Title</h1>
+                        @if (!string.IsNullOrWhiteSpace(Model.Description))
+                        {
+                            <p class="text-muted mb-0">@Model.Description</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h2 class="h5 fw-bold mb-0">Câu hỏi (@Model.Questions.Count)</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (!Model.Questions.Any())
+                        {
+                            <div class="text-center text-muted py-4">
+                                Chưa có câu hỏi nào cho khảo sát này.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var question in Model.Questions.OrderBy(q => q.OrderIndex))
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="small text-muted mb-1">Câu @question.OrderIndex</div>
+                                                <div class="fw-semibold">@question.QuestionText</div>
+                                                <div class="small text-muted mt-1">
+                                                    Loại: @question.QuestionType
+                                                    @(question.IsRequired ? "• Bắt buộc" : "")
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-light text-secondary">
+                                                @question.Choices.Count lựa chọn
+                                            </span>
+                                        </div>
+                                        @if (question.Choices.Any())
+                                        {
+                                            <ul class="mt-3 text-muted small">
+                                                @foreach (var choice in question.Choices.OrderBy(c => c.OrderIndex))
+                                                {
+                                                    <li>@choice.ChoiceText</li>
+                                                }
+                                            </ul>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h5 fw-bold mb-3">Thông tin khảo sát</h2>
+                        <ul class="list-unstyled vstack gap-3 mb-0 text-muted">
+                            <li>
+                                <i class="bi bi-person-circle me-2 text-primary"></i>
+                                Tạo bởi: @(Model.Owner?.DisplayName ?? "Ẩn danh")
+                            </li>
+                            <li>
+                                <i class="bi bi-calendar-event me-2 text-primary"></i>
+                                Bắt đầu: @(Model.StartAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Không giới hạn")
+                            </li>
+                            <li>
+                                <i class="bi bi-calendar-x me-2 text-primary"></i>
+                                Kết thúc: @(Model.EndAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Không giới hạn")
+                            </li>
+                            <li>
+                                <i class="bi bi-shield-lock me-2 text-primary"></i>
+                                @(Model.IsAnonymous ? "Cho phép ẩn danh" : "Yêu cầu tài khoản")
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <a asp-area="Public" asp-controller="Take" asp-action="Index" asp-route-id="@Model.SurveyId" class="btn btn-primary btn-lg">
+                        <i class="bi bi-pencil-square me-2"></i>Tham gia khảo sát
+                    </a>
+                    <a asp-area="Public" asp-controller="Surveys" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Quay lại danh sách
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

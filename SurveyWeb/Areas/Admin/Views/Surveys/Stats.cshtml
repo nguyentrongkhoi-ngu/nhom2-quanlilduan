@@ -1,0 +1,309 @@
+﻿@using System.Text.Json
+@model SurveyWeb.Areas.Admin.Controllers.SurveysController.SurveyStatsVM
+@{
+    ViewData["Title"] = $"Thống kê - {Model.Title}";
+    var orderedQuestions = Model.Questions.OrderBy(q => q.OrderIndex).ToList();
+    var chartQueue = new List<string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Thống kê khảo sát</h2>
+        <p class="text-muted mb-0">@Model.Title @(Model.TopicName != null ? $" - {Model.TopicName}" : string.Empty)</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Index">&larr; Quay lại danh sách</a>
+        <a class="btn btn-primary" asp-action="Export" asp-route-id="@Model.SurveyId" asp-route-format="csv">
+            <i class="bi bi-filetype-csv me-1"></i>Tải CSV
+        </a>
+        <a class="btn btn-success" asp-action="Export" asp-route-id="@Model.SurveyId" asp-route-format="xlsx">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Tải Excel
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.CoverImagePath))
+{
+    <div class="mb-4 text-center">
+        <img src="~/@Model.CoverImagePath" alt="Ảnh bìa" class="img-fluid rounded shadow-sm" style="max-height: 240px;" />
+    </div>
+}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted small mb-2">Tổng phản hồi</h6>
+                <div class="display-6 fw-bold">@Model.TotalResponses</div>
+                <div class="text-muted small">@Model.DistinctRespondents người tham gia</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted small mb-2">Hoàn tất</h6>
+                <div class="display-6 fw-bold text-success">@Model.CompletedResponses</div>
+                <div class="text-muted small">@Model.InProgressResponses ðang làm</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted small mb-2">Thời gian hoàn tất TB</h6>
+                <div class="display-6 fw-bold">@(Model.AverageCompletionTime?.ToString("mm\\:ss") ?? "-")</div>
+                <div class="text-muted small">(mm:ss)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted small mb-2">Hoạt động</h6>
+                <div class="small">Bắt đầu: @(Model.FirstResponseAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                <div class="small">Cuối: @(Model.LastResponseAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach (var q in orderedQuestions)
+{
+    var chartId = string.Empty;
+    <section class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
+                <div>
+                    <h5 class="mb-1">Câu @q.OrderIndex. @q.QuestionText</h5>
+                    <div class="text-muted small text-uppercase">
+                        Loại: @q.QuestionType - @(q.IsRequired ? "Bắt buộc" : "Tùy chọn")
+                    </div>
+                </div>
+                <div class="text-md-end">
+                    <div class="fw-bold">@q.AnsweredCount / @Model.TotalResponses trả lời</div>
+                    <div class="text-muted small">@q.SkippedCount bỏ qua</div>
+                </div>
+            </div>
+
+            @if (q.Choices.Any())
+            {
+                chartId = $"chart-choice-{q.QuestionId}";
+                var labelsJson = JsonSerializer.Serialize(q.Choices.OrderBy(c => c.OrderIndex).Select(c => c.ChoiceText));
+                var countsJson = JsonSerializer.Serialize(q.Choices.OrderBy(c => c.OrderIndex).Select(c => c.Count));
+                chartQueue.Add($"configs.push({{ elementId: '{chartId}', kind: 'choices', labels: {labelsJson}, values: {countsJson} }});");
+
+                <div class="row g-4 align-items-center">
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="text-muted small">
+                                    <tr>
+                                        <th>Lựa chọn</th>
+                                        <th class="text-end" style="width:120px">Số lần chọn</th>
+                                        <th class="text-end" style="width:120px">Tỷ lệ (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var choice in q.Choices.OrderByDescending(c => c.Count))
+                                {
+                                    <tr>
+                                        <td>@choice.ChoiceText</td>
+                                        <td class="text-end fw-semibold">@choice.Count</td>
+                                        <td class="text-end">@choice.Percentage.ToString("0.##")</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-muted small mt-2">Tổng lượt chọn: @q.TotalSelections</div>
+                    </div>
+                    <div class="col-xl-4 col-lg-5">
+                        <div class="p-3 bg-light rounded-4 mx-auto" style="max-width: 330px;">
+                            <canvas id="@chartId" height="165"></canvas>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (q.Numeric is not null && q.NumericBuckets.Any())
+            {
+                chartId = $"chart-numeric-{q.QuestionId}";
+                var bucketLabels = JsonSerializer.Serialize(q.NumericBuckets.Select(b => b.Value % 1 == 0 ? b.Value.ToString("0") : b.Value.ToString("0.##")));
+                var bucketCounts = JsonSerializer.Serialize(q.NumericBuckets.Select(b => b.Count));
+                chartQueue.Add($"configs.push({{ elementId: '{chartId}', kind: 'numericBuckets', labels: {bucketLabels}, values: {bucketCounts} }});");
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="border rounded p-3 text-center">
+                                    <div class="text-muted small">Trung bình</div>
+                                    <div class="h4 mb-0">@q.Numeric.Average.ToString("0.##")</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-3 text-center">
+                                    <div class="text-muted small">Thấp nhất</div>
+                                    <div class="h4 mb-0">@q.Numeric.Min.ToString("0.##")</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-3 text-center">
+                                    <div class="text-muted small">Cao nhất</div>
+                                    <div class="h4 mb-0">@q.Numeric.Max.ToString("0.##")</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2">Số lượng câu trả lời hợp lệ: @q.Numeric.Count</div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="text-muted small">
+                                    <tr>
+                                        <th>Giá trị</th>
+                                        <th class="text-end" style="width:100px">Số lần</th>
+                                        <th class="text-end" style="width:90px">Tỷ lệ (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var bucket in q.NumericBuckets)
+                                {
+                                    <tr>
+                                        <td>@bucket.Value.ToString("0.##")</td>
+                                        <td class="text-end fw-semibold">@bucket.Count</td>
+                                        <td class="text-end">@bucket.Percentage.ToString("0.##")</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-12">
+                        <div class="p-3 bg-light rounded-4 mx-auto" style="max-width: 330px;">
+                            <canvas id="@chartId" height="165"></canvas>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (q.TextAnswers.Any())
+            {
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="list-group small">
+                            @foreach (var answer in q.TextAnswers)
+                            {
+                                <div class="list-group-item">@answer</div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-lg-6 d-flex align-items-center">
+                        <div class="text-muted small">
+                            @q.TextAnswerCount câu trả lời văn bản (tối đa 50 hiển thị).<br />
+                            Gợi ý: xuất CSV để phân tích sâu hơn.
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mb-0">Chưa có dữ liệu thống kê.</p>
+            }
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script>
+        const bootCharts = () => {
+            if (!window.Chart) return;
+            const configs = [];
+@foreach (var entry in chartQueue)
+{
+    @Html.Raw("            " + entry + "\n")
+}
+            const palette = count => Array.from({ length: count }, (_, idx) => `hsl(${(idx * 47) % 360}, 75%, 55%)`);
+
+            configs.forEach(cfg => {
+                const ctx = document.getElementById(cfg.elementId);
+                if (!ctx) return;
+
+                let chartConfig = null;
+
+                if (cfg.kind === 'choices') {
+                    chartConfig = {
+                        type: 'doughnut',
+                        data: {
+                            labels: cfg.labels,
+                            datasets: [{
+                                data: cfg.values,
+                                backgroundColor: palette(cfg.labels.length),
+                                borderWidth: 0,
+                                hoverOffset: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { usePointStyle: true }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => `${ctx.label}: ${ctx.formattedValue}`
+                                    }
+                                }
+                            }
+                        }
+                    };
+                } else if (cfg.kind === 'numericBuckets') {
+                    chartConfig = {
+                        type: 'bar',
+                        data: {
+                            labels: cfg.labels,
+                            datasets: [{
+                                data: cfg.values,
+                                backgroundColor: palette(cfg.labels.length),
+                                borderRadius: 10,
+                                maxBarThickness: 26
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } },
+                                x: { ticks: { precision: 0 } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => `${ctx.label}: ${ctx.formattedValue}`
+                                    }
+                                }
+                            }
+                        }
+                    };
+                }
+
+                if (chartConfig) {
+                    new Chart(ctx, chartConfig);
+                }
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootCharts);
+        } else {
+            bootCharts();
+        }
+    </script>
+}
+
+
+
+

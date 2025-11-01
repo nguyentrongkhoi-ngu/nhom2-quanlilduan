@@ -1,0 +1,27 @@
+# Visual Studio / .NET
+*.user
+*.suo
+*.cache
+*.log
+*.vs/
+.vs/
+[Vv]isual[Ss]tudio*/
+[Bb]in/
+[Oo]bj/
+*.db
+*.db-shm
+*.db-wal
+
+# Build outputs
+**/bin/
+**/obj/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rider/IDEA
+.idea/
+
+# Node (if any)
+node_modules/

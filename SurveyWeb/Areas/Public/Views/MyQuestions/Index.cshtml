@@ -1,0 +1,240 @@
+@model SurveyWeb.Areas.Public.Controllers.MyQuestionsController.ManageQuestionsVM
+@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Câu hỏi khảo sát";
+}
+
+<section class="py-3">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="mb-0">Câu hỏi: @Model.SurveyTitle</h3>
+            <a asp-area="Public" asp-controller="MySurveys" asp-action="Index" class="btn btn-outline-secondary btn-sm">Quay lại</a>
+        </div>
+
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success">@ok</div>
+        }
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0"><strong>Thêm câu hỏi mới</strong></div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="SurveyId" value="@Model.SurveyId" />
+                            <div class="mb-3">
+                                <label class="form-label">Nội dung câu hỏi *</label>
+                                <textarea name="QuestionText" rows="3" class="form-control" placeholder="Nhập nội dung câu hỏi..."></textarea>
+                                <span class="text-danger small" asp-validation-for="CreateForm.QuestionText"></span>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Loại *</label>
+                                    <select name="QuestionType" class="form-select" id="createType">
+                                        <option value="text">Văn bản</option>
+                                        <option value="single">Chọn 1</option>
+                                        <option value="multi">Chọn nhiều</option>
+                                        <option value="rating">Thang điểm</option>
+                                        <option value="nps">NPS</option>
+                                    </select>
+                                    <span class="text-danger small" asp-validation-for="CreateForm.QuestionType"></span>
+                                </div>
+                            </div>
+                            <div class="row g-2 mt-1" id="createNumericRow" style="display:none;">
+                                <div class="col-6">
+                                    <label class="form-label">Giới hạn ký tự</label>
+                                    <input type="number" name="MaxLength" class="form-control" id="createMaxLength" />
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label">Min</label>
+                                    <input type="number" step="1" name="MinValue" class="form-control" id="createMin" />
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label">Max</label>
+                                    <input type="number" step="1" name="MaxValue" class="form-control" id="createMax" />
+                                </div>
+                            </div>
+                            <div class="form-check my-2">
+                                <input class="form-check-input" type="checkbox" name="IsRequired" id="isreq" />
+                                <label for="isreq" class="form-check-label">Bắt buộc</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Phương án (mỗi dòng 1 lựa chọn)</label>
+                                <textarea name="ChoicesRaw" rows="4" class="form-control" id="createChoices" placeholder="Ví dụ:
+Rất hài lòng
+Bình thường
+Chưa hài lòng"></textarea>
+                                <small class="text-muted">Chỉ dùng cho Chọn 1/Chọn nhiều.</small>
+                                <span class="text-danger small" asp-validation-for="CreateForm.ChoicesRaw"></span>
+                            </div>
+                            <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle me-1"></i> Thêm câu hỏi</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0"><strong>Danh sách câu hỏi (@Model.Questions.Count)</strong></div>
+                    <div class="card-body">
+                        @if (!Model.Questions.Any())
+                        {
+                            <div class="text-center text-muted py-4">Chưa có câu hỏi nào.</div>
+                        }
+                        else
+                        {
+                            <div class="vstack gap-3">
+                                @foreach (var q in Model.Questions.OrderBy(x => x.OrderIndex))
+                                {
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="small text-muted">#@q.OrderIndex • @q.QuestionType.ToUpper() @(q.IsRequired ? "• Bắt buộc" : "")</div>
+                                                <div class="fw-semibold">@q.QuestionText</div>
+                                            </div>
+                                            <div>
+                                                <button type="button" class="btn btn-outline-primary btn-sm me-1 js-edit"
+                                                        data-id="@q.QuestionId"
+                                                        data-text="@q.QuestionText"
+                                                        data-type="@q.QuestionType"
+                                                        data-order="@q.OrderIndex"
+                                                        data-required="@q.IsRequired"
+                                                        data-maxlen="@(q.MaxLength?.ToString() ?? "")"
+                                                        data-min="@(q.MinValue?.ToString() ?? "")"
+                                                        data-max="@(q.MaxValue?.ToString() ?? "")"
+                                                        data-choices="@string.Join("\n", q.Choices.Select(c => c.ChoiceText))">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <form asp-action="Delete" asp-route-id="@q.QuestionId" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Xóa câu hỏi này?');"><i class="bi bi-trash"></i></button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        @if (q.Choices.Any())
+                                        {
+                                            <ul class="small mt-2 mb-0">
+                                                @foreach (var c in q.Choices.OrderBy(x => x.OrderIndex))
+                                                {
+                                                    <li>@c.OrderIndex. @c.ChoiceText</li>
+                                                }
+                                            </ul>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<partial name="_ValidationScriptsPartial" />
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editQuestionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Sửa câu hỏi</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form asp-action="Update" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="SurveyId" value="@Model.SurveyId" />
+        <input type="hidden" name="QuestionId" id="editId" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nội dung câu hỏi *</label>
+            <textarea name="QuestionText" id="editText" rows="3" class="form-control"></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Loại *</label>
+              <select name="QuestionType" id="editType" class="form-select">
+                <option value="text">Văn bản</option>
+                <option value="single">Chọn 1</option>
+                <option value="multi">Chọn nhiều</option>
+                <option value="rating">Thang điểm</option>
+                <option value="nps">NPS</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Thứ tự</label>
+              <input type="number" name="OrderIndex" id="editOrder" class="form-control" />
+            </div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div class="col-6">
+              <label class="form-label">Giới hạn ký tự</label>
+              <input type="number" name="MaxLength" id="editMaxLength" class="form-control" />
+            </div>
+            <div class="col-3">
+              <label class="form-label">Min</label>
+              <input type="number" step="1" name="MinValue" id="editMin" class="form-control" />
+            </div>
+            <div class="col-3">
+              <label class="form-label">Max</label>
+              <input type="number" step="1" name="MaxValue" id="editMax" class="form-control" />
+            </div>
+          </div>
+          <div class="form-check my-2">
+            <input class="form-check-input" type="checkbox" name="IsRequired" id="editRequired" />
+            <label for="editRequired" class="form-check-label">Bắt buộc</label>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Phương án (mỗi dòng 1 lựa chọn)</label>
+            <textarea name="ChoicesRaw" id="editChoices" rows="4" class="form-control"></textarea>
+            <small class="text-muted">Chỉ dùng cho Chọn 1/Chọn nhiều.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
+
+<script>
+  (function(){
+    function toggleCreateFields(){
+      const type = document.getElementById('createType').value;
+      const rows = document.getElementById('createNumericRow');
+      const maxLen = document.getElementById('createMaxLength');
+      const minI = document.getElementById('createMin');
+      const maxI = document.getElementById('createMax');
+      const choices = document.getElementById('createChoices');
+      // text: show maxLen; rating/nps: show min/max; single/multi: show choices
+      maxLen.parentElement.style.display = (type === 'text') ? '' : 'none';
+      minI.parentElement.style.display = (type === 'rating' || type === 'nps') ? '' : 'none';
+      maxI.parentElement.style.display = (type === 'rating' || type === 'nps') ? '' : 'none';
+      choices.parentElement.style.display = (type === 'single' || type === 'multi') ? '' : 'none';
+    }
+    const ct = document.getElementById('createType');
+    if(ct){ ct.addEventListener('change', toggleCreateFields); toggleCreateFields(); }
+
+    // Edit modal wiring
+    const modalEl = document.getElementById('editQuestionModal');
+    const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+    document.querySelectorAll('.js-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('editId').value = btn.dataset.id;
+        document.getElementById('editText').value = btn.dataset.text;
+        document.getElementById('editType').value = btn.dataset.type;
+        document.getElementById('editOrder').value = btn.dataset.order;
+        document.getElementById('editRequired').checked = (btn.dataset.required === 'True' || btn.dataset.required === 'true');
+        document.getElementById('editMaxLength').value = btn.dataset.maxlen || '';
+        document.getElementById('editMin').value = btn.dataset.min || '';
+        document.getElementById('editMax').value = btn.dataset.max || '';
+        document.getElementById('editChoices').value = btn.dataset.choices || '';
+        if(modal) modal.show();
+      });
+    });
+  })();
+</script>

@@ -1,0 +1,42 @@
+﻿@{
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Chính sách bảo mật";
+}
+
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm p-4 p-md-5">
+                    <h1 class="h3 fw-bold mb-4">Chính sách bảo mật</h1>
+                    <p class="text-muted">Chúng tôi cam kết bảo vệ thông tin cá nhân của bạn khi sử dụng SurveyWeb. Nội dung dưới đây mô tả chi tiết cách chúng tôi thu thập, sử dụng và lưu trữ dữ liệu.</p>
+
+                    <h2 class="h5 fw-semibold mt-4">1. Thông tin thu thập</h2>
+                    <p>Chúng tôi chỉ thu thập các thông tin cần thiết để phục vụ việc đăng ký, đăng nhập và thực hiện khảo sát. Bao gồm họ tên, email và dữ liệu câu trả lời.</p>
+
+                    <h2 class="h5 fw-semibold mt-4">2. Mục đích sử dụng</h2>
+                    <ul class="list-unstyled vstack gap-2 text-muted">
+                        <li><i class="bi bi-shield-lock text-primary me-2"></i>Đảm bảo trải nghiệm khảo sát an toàn và chính xác.</li>
+                        <li><i class="bi bi-graph-up text-primary me-2"></i>Phân tích dữ liệu tổng quan nhằm cải thiện dịch vụ.</li>
+                        <li><i class="bi bi-envelope-open text-primary me-2"></i>Gửi thông báo cập nhật quan trọng liên quan đến khảo sát.</li>
+                    </ul>
+
+                    <h2 class="h5 fw-semibold mt-4">3. Lưu trữ và bảo mật</h2>
+                    <p>Dữ liệu được lưu trữ trên hệ thống bảo mật, có phân quyền truy cập rõ ràng. Chúng tôi không chia sẻ thông tin cá nhân cho bên thứ ba nếu không có sự đồng ý của bạn.</p>
+
+                    <h2 class="h5 fw-semibold mt-4">4. Liên hệ</h2>
+                    <p>Nếu bạn có câu hỏi về quyền riêng tư, vui lòng liên hệ đội ngũ hỗ trợ qua email <a href="mailto:support@surveyweb.vn">support@surveyweb.vn</a>.</p>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <a asp-area="Public" asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Quay lại trang chủ
+                        </a>
+                        <a asp-area="Public" asp-controller="Surveys" asp-action="Index" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>Khám phá khảo sát
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

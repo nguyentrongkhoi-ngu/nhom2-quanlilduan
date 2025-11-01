@@ -1,0 +1,266 @@
+@model SurveyWeb.Models.ViewModels.HomeIndexVM
+@{
+    ViewData["Title"] = "Trang chủ";
+    Layout = "~/Areas/Public/Views/Shared/_Layout.cshtml";
+    int totalPages = (int)Math.Ceiling((double)Model.TotalItems / Model.PageSize);
+
+    string BuildQuery(string key, object? value)
+    {
+        var query = new Dictionary<string, string?>
+        {
+            ["q"] = Model.Q,
+            ["topicId"] = Model.TopicId?.ToString(),
+            ["sort"] = Model.Sort,
+            ["page"] = Model.Page.ToString()
+        };
+        query[key] = value?.ToString();
+        var joined = string.Join("&",
+            query.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+                 .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+        return "?" + joined;
+    }
+}
+
+<!-- ==== STYLE: chỉ view này dùng ==== -->
+<style>
+:root{
+  --c-primary:#4f46e5; --c-primary-2:#7c3aed; --c-muted:#64748b;
+}
+.text-gradient{
+  background: linear-gradient(90deg,var(--c-primary),var(--c-primary-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+/* HERO */
+.home-hero{
+  border-radius: 28px;
+  background:
+    radial-gradient(80% 120% at 100% 0%, rgba(124,58,237,.12), transparent 60%),
+    radial-gradient(70% 120% at 0% 100%, rgba(79,70,229,.12), transparent 60%),
+    linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid rgba(2,6,23,.06);
+  box-shadow: 0 30px 60px -30px rgba(2,6,23,.20);
+}
+.hero-illustration{
+  max-width: 460px;
+  filter: drop-shadow(0 18px 30px rgba(2,6,23,.12));
+}
+
+/* FORM FILTER */
+.filter-card .form-label{ font-weight:600; color:#0f172a; }
+.filter-card .form-control, .filter-card .form-select{
+  border-radius: 14px; padding: .7rem .9rem; border-color: rgba(2,6,23,.12);
+}
+.filter-card .form-control:focus, .filter-card .form-select:focus{
+  border-color: var(--c-primary); box-shadow: 0 0 0 .2rem rgba(79,70,229,.15);
+}
+.btn-icon-lg{ border-radius:14px; height: 46px; display:flex; align-items:center; justify-content:center; }
+
+/* CARD SURVEY */
+.card-smooth{ border-radius:18px; overflow:hidden; transition: transform .18s ease, box-shadow .18s ease; }
+.card-smooth:hover{ transform: translateY(-4px); box-shadow: 0 24px 48px -24px rgba(2,6,23,.25); }
+.card-figure{ aspect-ratio: 16/9; object-fit: cover; }
+.badge-chip{
+  background: #eef2ff; color: var(--c-primary);
+  border: 1px solid rgba(79,70,229,.18);
+  padding:.35rem .6rem; border-radius: 999px; font-weight:600;
+}
+.badge-soft{
+  border-radius: 999px; padding:.35rem .6rem; font-weight:600;
+}
+.badge-soft.success{ background: #ecfdf5; color:#059669; border:1px solid #a7f3d0; }
+.badge-soft.pause{ background: #f1f5f9; color:#475569; border:1px solid #e2e8f0; }
+
+.card-title{ margin:0; font-weight:800; font-size:1.05rem; letter-spacing:.1px; }
+.card-desc{ color:var(--c-muted); margin:0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* META ROW */
+.meta{ color:var(--c-muted); gap:.75rem; }
+.meta i{ opacity:.9; }
+
+/* ACTIONS */
+.btn-pill{ border-radius: 14px; }
+
+/* EMPTY STATE */
+.empty{
+  border:1px dashed rgba(2,6,23,.12); border-radius:18px; padding:3rem 1rem; background:#fff;
+}
+
+/* PAGINATION */
+.pagination .page-link{
+  border:none; margin:0 .18rem; border-radius:12px;
+  padding:.55rem .85rem; box-shadow: 0 6px 14px -10px rgba(2,6,23,.25);
+}
+.pagination .page-item.active .page-link{
+  background: linear-gradient(90deg,var(--c-primary),var(--c-primary-2));
+}
+</style>
+
+<!-- HERO -->
+<section class="py-5 mb-4 home-hero">
+    <div class="container py-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <h1 class="display-5 fw-bold mb-3">
+                    Khảo sát trực tuyến <span class="text-gradient">chuyên nghiệp</span>
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Tạo, chia sẻ và phân tích khảo sát trong vài phút. Khai thác nền tảng mạnh mẽ với kho biểu mẫu, báo cáo trực quan và nhiều công cụ hỗ trợ quyết định.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a asp-area="Public" asp-controller="Surveys" asp-action="Index" class="btn btn-primary btn-lg px-4 btn-pill">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Khám phá ngay
+                    </a>
+                    @if (User?.Identity?.IsAuthenticated ?? false)
+                    {
+                        <a asp-area="Public" asp-controller="MySurveys" asp-action="Create" class="btn btn-outline-primary btn-lg px-4 btn-pill">
+                            <i class="bi bi-plus-circle-dotted me-2"></i>Tạo khảo sát mới
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-area="Public" asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-lg px-4 btn-pill">
+                            <i class="bi bi-person-plus me-2"></i>Đăng nhập để tạo khảo sát
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-5 text-center text-lg-end">
+                <img src="~/img/hero-survey.svg" alt="Khảo sát trực tuyến" class="img-fluid hero-illustration" loading="lazy" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FILTER -->
+<section class="container mb-5">
+    <div class="card border-0 shadow-sm filter-card">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="keyword" class="form-label">Tìm kiếm</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0" style="border-radius:14px 0 0 14px"><i class="bi bi-search"></i></span>
+                        <input id="keyword" type="text" name="q" class="form-control border-start-0" style="border-radius:0 14px 14px 0"
+                               value="@Model.Q" placeholder="Nhập từ khóa khảo sát..." />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="topicId" class="form-label">Chủ đề</label>
+                    <select id="topicId" name="topicId" class="form-select">
+                        <option value="">Tất cả chủ đề</option>
+                        @foreach (var topic in Model.Topics)
+                        {
+                            <option value="@topic.Id" selected="@(Model.TopicId == topic.Id)">
+                                @topic.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="sort" class="form-label">Sắp xếp</label>
+                    <select id="sort" name="sort" class="form-select">
+                        <option value="new" selected="@(Model.Sort == "new")">Mới nhất</option>
+                        <option value="endsoon" selected="@(Model.Sort == "endsoon")">Sắp hết hạn</option>
+                        <option value="title" selected="@(Model.Sort == "title")">A → Z</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="submit" class="btn btn-primary btn-icon-lg"><i class="bi bi-arrow-right-short fs-4"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- LIST -->
+<section class="container mb-5">
+    @if (!Model.Items.Any())
+    {
+        <div class="empty text-center text-muted">
+            <i class="bi bi-clipboard-check display-5 mb-3 d-block"></i>
+            <p class="mb-0">Chưa có khảo sát phù hợp. Hãy thử điều chỉnh bộ lọc.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var s in Model.Items)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <div class="card card-smooth h-100 border-0">
+                        @if (!string.IsNullOrWhiteSpace(s.CoverImagePath))
+                        {
+                            <img src="@Url.Content("~/" + s.CoverImagePath)" class="card-img-top card-figure" alt="Ảnh bìa khảo sát @s.Title" loading="lazy" />
+                        }
+                        <div class="card-body d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge-chip">
+                                    <i class="bi bi-bookmark-star me-1"></i>@s.TopicName
+                                </span>
+                                @if (s.IsActiveNow)
+                                {
+                                    <span class="badge-soft success"><i class="bi bi-check2-circle me-1"></i>Đang mở</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-soft pause"><i class="bi bi-pause-circle me-1"></i>Tạm dừng</span>
+                                }
+                            </div>
+
+                            <h3 class="card-title">@s.Title</h3>
+
+                            @if (!string.IsNullOrWhiteSpace(s.Description))
+                            {
+                                <p class="card-desc">@s.Description</p>
+                            }
+
+                            <div class="mt-auto d-flex justify-content-between align-items-center meta small">
+                                <span><i class="bi bi-calendar-event me-1"></i>@(s.StartAt.HasValue ? $"Bắt đầu {s.StartAt:dd/MM/yyyy}" : "Mở liên tục")</span>
+                                @if (s.DaysLeft.HasValue)
+                                {
+                                    <span><i class="bi bi-hourglass-split me-1"></i>Còn @s.DaysLeft.Value ngày</span>
+                                }
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a asp-area="Public" asp-controller="Surveys" asp-action="Details" asp-route-id="@s.SurveyId" class="btn btn-outline-secondary w-100 btn-pill">
+                                    Xem chi tiết
+                                </a>
+                                <a asp-area="Public" asp-controller="Take" asp-action="Index" asp-route-id="@s.SurveyId" class="btn btn-primary w-100 btn-pill">
+                                    Tham gia
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@if (totalPages > 1)
+{
+    <section class="container pb-5">
+        <nav aria-label="Phân trang">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link" href='@BuildQuery("page", Math.Max(1, Model.Page - 1))' aria-label="Trang trước">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                @for (var i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                        <a class="page-link" href='@BuildQuery("page", i)'>@i</a>
+                    </li>
+                }
+                <li class="page-item @(Model.Page >= totalPages ? "disabled" : "")">
+                    <a class="page-link" href='@BuildQuery("page", Math.Min(totalPages, Model.Page + 1))' aria-label="Trang sau">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </section>
+}
